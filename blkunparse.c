@@ -14,14 +14,22 @@
 #include <locale.h>
 #include <libgen.h>
 
-#include "blktrace.h"
+//#include "blktrace.h"
 #include "rbtree.h"
-#include "jhash.h"
+//#include "jhash.h"
 
 static char blkunparse_version[] = "0.1";
 
+FILE *ofp;
 static FILE *dump_fp;
 static char *dump_binary;
+
+FILE * btrace_fp;
+char * line = NULL;
+size_t len = 0;
+
+#define is_done()	(*(volatile int *)(&done))
+static volatile int done;
 
 static struct option l_opts[] = {
         {
@@ -59,10 +67,11 @@ static int do_btrace_file(void){
     // name_fixup();
     //if (ret)
     //    return ret;
-    
-
+    btrace_fp = fopen("./test_traces/perl.log", "r");
+    return 0;
 }
 
+#define S_OPTS  "a:A:b:D:d:f:F:hi:o:Oqstw:vVM"
 static char usage_str[] =    "\n\n" \
 	"-i <file>           | --input=<file>\n" \
 	"[ -V                | --version ]\n\n" \
@@ -74,6 +83,10 @@ static void usage(char *prog){
     fprintf(stderr, "Usage: %s %s", prog, usage_str);
 }
 
+static void handle_sigint(__attribute__((__unused__)) int sig)
+{
+    done = 1;
+}
 
 int main(int argc, char *argv[]){
     int c, ret, mode;
@@ -83,11 +96,11 @@ int main(int argc, char *argv[]){
     while ((c = getopt_long(argc, argv, S_OPTS, l_opts, NULL)) != -1) {
         switch (c) {
             case 'i':
-                if (is_pipe(optarg) && !pipeline) {
-                    pipeline = 1;
-                    pipename = strdup(optarg);
-                } else if (resize_devices(optarg) != 0)
-                    return 1;
+                //if (is_pipe(optarg) && !pipeline) {
+                    //pipeline = 1;
+                    //pipename = strdup(optarg);
+                //} else if (resize_devices(optarg) != 0)
+                    //return 1;
                 break;
 
             case 'd':
@@ -95,7 +108,7 @@ int main(int argc, char *argv[]){
                 break;
 
             case 'V':
-                printf("%s version %s\n", argv[0], blkparse_version);
+                printf("%s version %s\n", argv[0], blkunparse_version);
                 return 0;
 
             default:
