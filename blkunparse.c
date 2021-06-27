@@ -22,7 +22,9 @@ static char blkunparse_version[] = "0.1";
 
 FILE *ofp;
 static FILE *dump_fp;
+static FILE *ip_fp;
 static char *dump_binary;
+static char *ip_fstr;
 
 FILE * btrace_fp;
 char * line = NULL;
@@ -67,13 +69,18 @@ static int do_btrace_file(void){
     // name_fixup();
     //if (ret)
     //    return ret;
-    btrace_fp = fopen("./test_traces/perl.log", "r");
+    char * log_line;
+    size_t len = 0;
+    while (getline(&log_line, &len, ip_fp) != -1) {
+        printf("%s", log_line);
+    }
     return 0;
 }
 
 #define S_OPTS  "a:A:b:D:d:f:F:hi:o:Oqstw:vVM"
 static char usage_str[] =    "\n\n" \
 	"-i <file>           | --input=<file>\n" \
+	"-d <file>           | --binary_dump=<file>\n" \
 	"[ -V                | --version ]\n\n" \
 	"\t-i Input file containing trace data, or '-' for stdin\n" \
 	"\t-V Print program version info\n\n";
@@ -89,13 +96,13 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 }
 
 int main(int argc, char *argv[]){
-    int c, ret, mode;
-    char *ofp_buffer = NULL;
+    int c, ret;
     char *bin_ofp_buffer = NULL;
 
     while ((c = getopt_long(argc, argv, S_OPTS, l_opts, NULL)) != -1) {
         switch (c) {
             case 'i':
+                ip_fstr = optarg;
                 //if (is_pipe(optarg) && !pipeline) {
                     //pipeline = 1;
                     //pipename = strdup(optarg);
@@ -142,12 +149,17 @@ int main(int argc, char *argv[]){
         }
     }
 
+    if(ip_fstr){
+        ip_fp = fopen(ip_fstr, "r");
+        if(!ip_fp){
+            perror(ip_fstr);
+            ip_fstr = NULL;
+            return 1;
+        }
+    }
+
     ret = do_btrace_file();
 
-    if (ofp_buffer) {
-        fflush(ofp);
-        free(ofp_buffer);
-    }
     if (bin_ofp_buffer) {
         fflush(dump_fp);
         free(bin_ofp_buffer);
