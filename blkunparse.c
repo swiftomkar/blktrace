@@ -150,6 +150,7 @@ int main(int argc, char *argv[]){
     }
 
     if(ip_fstr){
+        printf("%s/n", ip_fstr);
         ip_fp = fopen(ip_fstr, "r");
         if(!ip_fp){
             perror(ip_fstr);
