@@ -14,13 +14,75 @@
 #include <locale.h>
 #include <libgen.h>
 
-//#include "blktrace.h"
+#include "blktrace.h"
 #include "rbtree.h"
 //#include "jhash.h"
 
 static char blkunparse_version[] = "0.1";
 
-FILE *ofp;
+struct per_dev_info {
+    dev_t dev;
+    char *name;
+
+    int backwards;
+    unsigned long long events;
+    unsigned long long first_reported_time;
+    unsigned long long last_reported_time;
+    unsigned long long last_read_time;
+    struct io_stats io_stats;
+    unsigned long skips;
+    unsigned long long seq_skips;
+    unsigned int max_depth[2];
+    unsigned int cur_depth[2];
+
+    struct rb_root rb_track;
+
+    int nfiles;
+    int ncpus;
+
+    unsigned long *cpu_map;
+    unsigned int cpu_map_max;
+
+    struct per_cpu_info *cpus;
+};
+
+/*
+ * some duplicated effort here, we can unify this hash and the ppi hash later
+ */
+struct process_pid_map {
+    pid_t pid;
+    char comm[16];
+    struct process_pid_map *hash_next, *list_next;
+};
+
+#define PPM_HASH_SHIFT	(8)
+#define PPM_HASH_SIZE	(1 << PPM_HASH_SHIFT)
+#define PPM_HASH_MASK	(PPM_HASH_SIZE - 1)
+static struct process_pid_map *ppm_hash_table[PPM_HASH_SIZE];
+
+struct per_process_info {
+    struct process_pid_map *ppm;
+    struct io_stats io_stats;
+    struct per_process_info *hash_next, *list_next;
+    int more_than_one;
+
+    /*
+     * individual io stats
+     */
+    unsigned long long longest_allocation_wait[2];
+    unsigned long long longest_dispatch_wait[2];
+    unsigned long long longest_completion_wait[2];
+};
+
+#define PPI_HASH_SHIFT	(8)
+#define PPI_HASH_SIZE	(1 << PPI_HASH_SHIFT)
+#define PPI_HASH_MASK	(PPI_HASH_SIZE - 1)
+static struct per_process_info *ppi_hash_table[PPI_HASH_SIZE];
+static struct per_process_info *ppi_list;
+static int ppi_list_entries;
+
+//jiust copied over form blkparse. may need changes
+
 static FILE *dump_fp;
 static FILE *ip_fp;
 static char *dump_binary;
@@ -65,10 +127,87 @@ static int name_fixup(char *name)
     return 0;
 }
 
+static struct per_cpu_info *get_cpu_info(struct per_dev_info *pdi, int cpu){
+    struct per_cpu_info *pci;
+
+    if (cpu >= pdi->ncpus)
+        resize_cpu_info(pdi, cpu);
+
+    pci = &pdi->cpus[cpu];
+    pci->cpu = cpu;
+    return pci;
+}
+
+
+static struct ms_stream *ms_alloc(struct per_dev_info *pdi, int cpu)
+{
+    struct ms_stream *msp = malloc(sizeof(*msp));
+
+    msp->next = NULL;
+    msp->first = msp->last = NULL;
+    msp->pdi = pdi;
+    msp->cpu = cpu;
+
+    if (ms_prime(msp))
+        ms_sort(msp);
+
+    return msp;
+}
+
+static int setup_out_file(struct per_dev_info *pdi, int cpu){
+    char *dname, *filename;
+    struct per_cpu_info *pci = get_cpu_info(pdi, cpu);
+
+    pci->cpu = cpu;
+    pci->fdblock = -1;
+
+    p = strdup(pdi->name);
+    dname = dirname(p);
+
+    if (strcmp(dname, ".")) {
+        input_dir = dname;
+        p = strdup(pdi->name);
+        strcpy(pdi->name, basename(p));
+    }
+    free(p);
+
+    if (input_dir)
+        len = sprintf(pci->fname, "%s/", input_dir);
+
+    snprintf(pci->fname + len, sizeof(pci->fname)-1-len,
+             "%s.blktrace.%d", pdi->name, pci->cpu);
+    if (stat(pci->fname, &st) < 0)
+        return 0;
+    if (!st.st_size)
+        return 1;
+
+    pci->fd = open(pci->fname, O_WRONLY | O_APPEND | O_CREAT, 0644);
+    if (pci->fd < 0) {
+        perror(pci->fname);
+        return 0;
+    }
+
+    printf("Output file %s added\n", pci->fname);
+
+    //cpu_mark_online(pdi, pci->cpu);
+
+    pdi->nfiles++;
+    ms_alloc(pdi, pci->cpu);
+
+    return 1;
+
+}
+
 static int do_btrace_file(void){
     // name_fixup();
     //if (ret)
     //    return ret;
+    int i, cpu, ret;
+    struct per_dev_info *pdi;
+    for (i = 0; i< ndevices; i++){
+        pdi = &devices[i];
+        for(cpu = 0; setup_out_file(pdi, cpu); cpu++);
+    }
     char * log_line;
     size_t len = 0;
     while (getline(&log_line, &len, ip_fp) != -1) {
@@ -93,6 +232,17 @@ static void usage(char *prog){
 static void handle_sigint(__attribute__((__unused__)) int sig)
 {
     done = 1;
+}
+
+void setup_output_files(){
+    struct per_dev_info *pdi;
+
+    for (i = 0; i < ndevices; i++) {
+        pdi = &devices[i];
+
+        for (cpu = 0; setup_file(pdi, cpu); cpu++)
+            ;
+    }
 }
 
 int main(int argc, char *argv[]){
@@ -158,7 +308,7 @@ int main(int argc, char *argv[]){
             return 1;
         }
     }
-
+    setup_out_files();
     ret = do_btrace_file();
 
     if (bin_ofp_buffer) {
