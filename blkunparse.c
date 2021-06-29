@@ -3,6 +3,7 @@
 //
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/sysinfo.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -81,11 +82,17 @@ static struct per_process_info *ppi_hash_table[PPI_HASH_SIZE];
 static struct per_process_info *ppi_list;
 static int ppi_list_entries;
 
-//jiust copied over form blkparse. may need changes
+//just copied over form blkparse. may need changes
 
-static FILE *dump_fp;
+
+static int ndevices = 1; //static config for now.
+static struct per_dev_info *devices; //how to fill this list of devices?
+
+static char *input_dir;
+
+//static FILE *dump_fp;
 static FILE *ip_fp;
-static char *dump_binary;
+static char *dump_binary_dir;
 static char *ip_fstr;
 
 FILE * btrace_fp;
@@ -94,6 +101,82 @@ size_t len = 0;
 
 #define is_done()	(*(volatile int *)(&done))
 static volatile int done;
+
+static int resize_devices(char *name)
+{
+    int size = (ndevices + 1) * sizeof(struct per_dev_info);
+
+    devices = realloc(devices, size);
+    if (!devices) {
+        fprintf(stderr, "Out of memory, device %s (%d)\n", name, size);
+        return 1;
+    }
+    memset(&devices[ndevices], 0, sizeof(struct per_dev_info));
+    devices[ndevices].name = name;
+    ndevices++;
+    return 0;
+}
+
+static struct per_dev_info *get_dev_info(dev_t dev)
+{
+    struct per_dev_info *pdi;
+    int i;
+
+    for (i = 0; i < ndevices; i++) {
+        if (!devices[i].dev)
+            devices[i].dev = dev;
+        if (devices[i].dev == dev)
+            return &devices[i];
+    }
+
+    if (resize_devices(NULL))
+        return NULL;
+
+    pdi = &devices[ndevices - 1];
+    pdi->dev = dev;
+    pdi->first_reported_time = 0;
+    pdi->last_read_time = 0;
+
+    return pdi;
+}
+
+static void resize_cpu_info(struct per_dev_info *pdi, int cpu)
+{
+    struct per_cpu_info *cpus = pdi->cpus;
+    int ncpus = pdi->ncpus;
+    int new_count = cpu + 1;
+    int new_space, size;
+    char *new_start;
+
+    size = new_count * sizeof(struct per_cpu_info);
+    cpus = realloc(cpus, size);
+    if (!cpus) {
+        char name[20];
+        //fprintf(stderr, "Out of memory, CPU info for device %s (%d)\n",
+        //        get_dev_name(pdi, name, sizeof(name)), size);
+        fprintf(stderr, "Out of memory");
+        exit(1);
+    }
+
+    new_start = (char *)cpus + (ncpus * sizeof(struct per_cpu_info));
+    new_space = (new_count - ncpus) * sizeof(struct per_cpu_info);
+    memset(new_start, 0, new_space);
+
+    pdi->ncpus = new_count;
+    pdi->cpus = cpus;
+
+    for (new_count = 0; new_count < pdi->ncpus; new_count++) {
+        struct per_cpu_info *pci = &pdi->cpus[new_count];
+
+        if (!pci->fd) {
+            pci->fd = -1;
+            memset(&pci->rb_last, 0, sizeof(pci->rb_last));
+            pci->rb_last_entries = 0;
+            pci->last_sequence = -1;
+        }
+    }
+}
+
 
 static struct option l_opts[] = {
         {
@@ -138,7 +221,7 @@ static struct per_cpu_info *get_cpu_info(struct per_dev_info *pdi, int cpu){
     return pci;
 }
 
-
+/*
 static struct ms_stream *ms_alloc(struct per_dev_info *pdi, int cpu)
 {
     struct ms_stream *msp = malloc(sizeof(*msp));
@@ -153,9 +236,14 @@ static struct ms_stream *ms_alloc(struct per_dev_info *pdi, int cpu)
 
     return msp;
 }
-
+*/
 static int setup_out_file(struct per_dev_info *pdi, int cpu){
-    char *dname, *filename;
+    printf("setup_out_file function stub\n");
+    return 0;
+}
+/*
+static int setup_out_file(struct per_dev_info *pdi, int cpu){
+    char *dname, *p;
     struct per_cpu_info *pci = get_cpu_info(pdi, cpu);
 
     pci->cpu = cpu;
@@ -176,10 +264,11 @@ static int setup_out_file(struct per_dev_info *pdi, int cpu){
 
     snprintf(pci->fname + len, sizeof(pci->fname)-1-len,
              "%s.blktrace.%d", pdi->name, pci->cpu);
-    if (stat(pci->fname, &st) < 0)
-        return 0;
-    if (!st.st_size)
-        return 1;
+
+    //if (stat(pci->fname, &st) < 0)
+    //    return 0;
+    //if (!st.st_size)
+    //    return 1;
 
     pci->fd = open(pci->fname, O_WRONLY | O_APPEND | O_CREAT, 0644);
     if (pci->fd < 0) {
@@ -192,17 +281,18 @@ static int setup_out_file(struct per_dev_info *pdi, int cpu){
     //cpu_mark_online(pdi, pci->cpu);
 
     pdi->nfiles++;
-    ms_alloc(pdi, pci->cpu);
+    //ms_alloc(pdi, pci->cpu);
 
     return 1;
 
 }
-
+ */
+/*
 static int do_btrace_file(void){
     // name_fixup();
     //if (ret)
     //    return ret;
-    int i, cpu, ret;
+    int i, cpu;
     struct per_dev_info *pdi;
     for (i = 0; i< ndevices; i++){
         pdi = &devices[i];
@@ -215,11 +305,11 @@ static int do_btrace_file(void){
     }
     return 0;
 }
-
+*/
 #define S_OPTS  "a:A:b:D:d:f:F:hi:o:Oqstw:vVM"
 static char usage_str[] =    "\n\n" \
 	"-i <file>           | --input=<file>\n" \
-	"-d <file>           | --binary_dump=<file>\n" \
+	"-d <dir_path>       | --binary_dump=<dir_path>\n" \
 	"[ -V                | --version ]\n\n" \
 	"\t-i Input file containing trace data, or '-' for stdin\n" \
 	"\t-V Print program version info\n\n";
@@ -234,15 +324,19 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
     done = 1;
 }
 
-void setup_output_files(){
+int setup_out_files(void){
+    int i, cpu;
     struct per_dev_info *pdi;
 
     for (i = 0; i < ndevices; i++) {
         pdi = &devices[i];
+        int num_cpus = get_nprocs();
 
-        for (cpu = 0; setup_file(pdi, cpu); cpu++)
-            ;
+        for (cpu = 0; cpu < num_cpus; cpu++){
+            setup_out_file(pdi, cpu);
+        }
     }
+    return 1;
 }
 
 int main(int argc, char *argv[]){
@@ -261,7 +355,7 @@ int main(int argc, char *argv[]){
                 break;
 
             case 'd':
-                dump_binary = optarg;
+                dump_binary_dir = optarg;
                 break;
 
             case 'V':
@@ -280,7 +374,7 @@ int main(int argc, char *argv[]){
 
     setlocale(LC_NUMERIC, "en_US");
 
-
+/*
     if (dump_binary) {
         if (!strcmp(dump_binary, "-"))
             dump_fp = stdout;
@@ -298,9 +392,9 @@ int main(int argc, char *argv[]){
             return 1;
         }
     }
-
+*/
     if(ip_fstr){
-        printf("%s/n", ip_fstr);
+        printf("%s\n", ip_fstr);
         ip_fp = fopen(ip_fstr, "r");
         if(!ip_fp){
             perror(ip_fstr);
@@ -308,12 +402,17 @@ int main(int argc, char *argv[]){
             return 1;
         }
     }
-    setup_out_files();
-    ret = do_btrace_file();
 
-    if (bin_ofp_buffer) {
-        fflush(dump_fp);
-        free(bin_ofp_buffer);
+    ret = setup_out_files();
+    if (!ret){
+        perror("output file creation error\n");
+        return ret;
     }
+    //ret = do_btrace_file();
+
+    //if (bin_ofp_buffer) {
+    //    fflush(dump_fp);
+    //    free(bin_ofp_buffer);
+    //}
     return ret;
 }
