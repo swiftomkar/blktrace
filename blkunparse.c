@@ -85,7 +85,7 @@ static int ppi_list_entries;
 //just copied over form blkparse. may need changes
 
 
-static int ndevices = 1; //static config for now.
+static int ndevices = 0; //static config for now.
 static struct per_dev_info *devices; //how to fill this list of devices?
 
 static char *input_dir;
@@ -237,11 +237,15 @@ static struct ms_stream *ms_alloc(struct per_dev_info *pdi, int cpu)
     return msp;
 }
 */
+/*
 static int setup_out_file(struct per_dev_info *pdi, int cpu){
     printf("setup_out_file function stub\n");
+    char *dname, *p;
+    struct per_cpu_info *pci = get_cpu_info(pdi, cpu);
     return 0;
 }
-/*
+ */
+
 static int setup_out_file(struct per_dev_info *pdi, int cpu){
     char *dname, *p;
     struct per_cpu_info *pci = get_cpu_info(pdi, cpu);
@@ -286,7 +290,6 @@ static int setup_out_file(struct per_dev_info *pdi, int cpu){
     return 1;
 
 }
- */
 /*
 static int do_btrace_file(void){
     // name_fixup();
@@ -324,7 +327,7 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
     done = 1;
 }
 
-int setup_out_files(void){
+static int setup_out_files(void){
     int i, cpu;
     struct per_dev_info *pdi;
 
@@ -332,9 +335,11 @@ int setup_out_files(void){
         pdi = &devices[i];
         int num_cpus = get_nprocs();
 
-        for (cpu = 0; cpu < num_cpus; cpu++){
-            setup_out_file(pdi, cpu);
-        }
+        for(cpu = 0; setup_out_file(pdi, cpu); cpu++)
+            ;
+        //for (cpu = 0; cpu < num_cpus; cpu++){
+        //    setup_out_file(pdi, cpu);
+        //}
     }
     return 1;
 }
@@ -402,6 +407,8 @@ int main(int argc, char *argv[]){
             return 1;
         }
     }
+
+    resize_devices(ip_fstr);
 
     ret = setup_out_files();
     if (!ret){
