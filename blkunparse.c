@@ -247,7 +247,9 @@ static int setup_out_file(struct per_dev_info *pdi, int cpu){
  */
 
 static int setup_out_file(struct per_dev_info *pdi, int cpu){
+    int len = 0;
     char *dname, *p;
+    struct stat st;
     struct per_cpu_info *pci = get_cpu_info(pdi, cpu);
 
     pci->cpu = cpu;
@@ -335,11 +337,8 @@ static int setup_out_files(void){
         pdi = &devices[i];
         int num_cpus = get_nprocs();
 
-        for(cpu = 0; setup_out_file(pdi, cpu); cpu++)
-            ;
-        //for (cpu = 0; cpu < num_cpus; cpu++){
-        //    setup_out_file(pdi, cpu);
-        //}
+        for (cpu = 0; cpu < num_cpus; cpu++)
+            setup_out_file(pdi, cpu);
     }
     return 1;
 }
@@ -421,5 +420,6 @@ int main(int argc, char *argv[]){
     //    fflush(dump_fp);
     //    free(bin_ofp_buffer);
     //}
+    printf("%d\n", ret);
     return ret;
 }
