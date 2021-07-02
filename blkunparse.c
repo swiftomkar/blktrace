@@ -1,6 +1,12 @@
 //
 // Created by Omkar Desai on 6/24/21.
 //
+/*
+Each blocktrace record contains the following fields
+
+[Device Major Number,Device Minor Number] [CPU Core ID] [Record ID] [Timestamp (in nanoseconds)]
+[ProcessID] [Trace Action] [OperationType] [SectorNumber + I/O Size] [ProcessName]
+*/
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
@@ -329,6 +335,35 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
     done = 1;
 }
 
+static int handle(void){
+    ssize_t read;
+
+    char * t;
+    struct per_dev_info *pdi;
+    struct per_cpu_info *pci;
+    struct blk_io_trace *bit;
+
+    char *delim = " ";
+    char *token;
+    char *tokens[11];
+    int i;
+
+    while((read = getline(&line, &len, ip_fp)) != -1){
+        t = line;
+        token = strtok(t, delim);
+        while(token != NULL){
+            tokens[i] = token;
+            i++;
+            token = strtok(NULL, delim);
+        }
+        for(int j=0;j<11;j++){
+            printf("%s ", tokens[j]);
+        }
+
+    }
+    return 0;
+}
+
 static int setup_out_files(void){
     int i, cpu;
     struct per_dev_info *pdi;
@@ -414,12 +449,10 @@ int main(int argc, char *argv[]){
         perror("output file creation error\n");
         return ret;
     }
-    //ret = do_btrace_file();
+    ret = handle();
 
-    //if (bin_ofp_buffer) {
-    //    fflush(dump_fp);
-    //    free(bin_ofp_buffer);
-    //}
-    printf("%d\n", ret);
+    // we have created the output files and also opened the input file
+    // read each line from the file and process it now.That is it!
+
     return ret;
 }
