@@ -20,9 +20,11 @@ Each blocktrace record contains the following fields
 #include <signal.h>
 #include <locale.h>
 #include <libgen.h>
+#include <time.h>
 
 #include "blktrace.h"
 #include "rbtree.h"
+#include "blktrace_api.h"
 //#include "jhash.h"
 
 static char blkunparse_version[] = "0.1";
@@ -104,6 +106,8 @@ static char *ip_fstr;
 FILE * btrace_fp;
 char * line = NULL;
 size_t len = 0;
+
+unsigned long unparse_genesis_time;
 
 #define is_done()	(*(volatile int *)(&done))
 static volatile int done;
@@ -243,19 +247,10 @@ static struct ms_stream *ms_alloc(struct per_dev_info *pdi, int cpu)
     return msp;
 }
 */
-/*
-static int setup_out_file(struct per_dev_info *pdi, int cpu){
-    printf("setup_out_file function stub\n");
-    char *dname, *p;
-    struct per_cpu_info *pci = get_cpu_info(pdi, cpu);
-    return 0;
-}
- */
 
 static int setup_out_file(struct per_dev_info *pdi, int cpu){
     int len = 0;
     char *dname, *p;
-    struct stat st;
     struct per_cpu_info *pci = get_cpu_info(pdi, cpu);
 
     pci->cpu = cpu;
@@ -276,11 +271,6 @@ static int setup_out_file(struct per_dev_info *pdi, int cpu){
 
     snprintf(pci->fname + len, sizeof(pci->fname)-1-len,
              "%s.blktrace.%d", pdi->name, pci->cpu);
-
-    //if (stat(pci->fname, &st) < 0)
-    //    return 0;
-    //if (!st.st_size)
-    //    return 1;
 
     pci->fd = open(pci->fname, O_WRONLY | O_APPEND | O_CREAT, 0644);
     if (pci->fd < 0) {
@@ -341,24 +331,32 @@ static int handle(void){
     char * t;
     struct per_dev_info *pdi;
     struct per_cpu_info *pci;
-    struct blk_io_trace *bit;
+    struct blk_io_trace bit;
 
     char *delim = " ";
     char *token;
-    char *tokens[11];
-    int i;
+
+
 
     while((read = getline(&line, &len, ip_fp)) != -1){
         t = line;
+        char *tokens[20];
+        int i=0;
         token = strtok(t, delim);
-        while(token != NULL){
+        while(token != NULL) {
             tokens[i] = token;
             i++;
             token = strtok(NULL, delim);
         }
-        for(int j=0;j<11;j++){
-            printf("%s ", tokens[j]);
-        }
+        //{
+            //bit->sequence = (__u32)tokens[2];
+            //bit->time = (__u64)unparse_genesis_time+tokens[3];
+            //bit->cpu = (__u32)tokens[1];
+
+            bit.sequence = 0;
+            bit.time = 0;
+            bit.cpu = 0;
+        //}
 
     }
     return 0;
@@ -449,6 +447,7 @@ int main(int argc, char *argv[]){
         perror("output file creation error\n");
         return ret;
     }
+    unparse_genesis_time = time(NULL);
     ret = handle();
 
     // we have created the output files and also opened the input file
