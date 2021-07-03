@@ -325,13 +325,28 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
     done = 1;
 }
 
+struct blk_io_trace get_bit(char * tok[]){
+    struct blk_io_trace bio_;
+    struct per_dev_info pdi_;
+    struct per_cpu_info pci_;
+
+    bio_.sequence = (__u32) *tok[2];
+    bio_.time = (__u64)unparse_genesis_time+ *tok[3];
+    bio_.cpu = (__u32) *tok[1];
+    bio_.pid = (__u32) *tok[4];
+    __u16 error_status = 0;
+    bio_.error = error_status;
+
+    return bio_;
+}
+
 static int handle(void){
     ssize_t read;
 
     char * t;
-    struct per_dev_info *pdi;
-    struct per_cpu_info *pci;
-    struct blk_io_trace bit;
+    struct per_dev_info _pdi;
+    struct per_cpu_info _pci;
+    struct blk_io_trace _bit;
 
     char *delim = " ";
     char *token;
@@ -348,16 +363,7 @@ static int handle(void){
             i++;
             token = strtok(NULL, delim);
         }
-        //{
-            //bit->sequence = (__u32)tokens[2];
-            //bit->time = (__u64)unparse_genesis_time+tokens[3];
-            //bit->cpu = (__u32)tokens[1];
-
-            bit.sequence = 0;
-            bit.time = 0;
-            bit.cpu = 0;
-        //}
-
+        struct blk_io_trace processed_bit = get_bit(tokens);
     }
     return 0;
 }
