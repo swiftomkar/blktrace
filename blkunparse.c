@@ -338,6 +338,76 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
     done = 1;
 }
 
+void get_action_code(struct blk_io_trace* bio_, char act){
+    switch (act) {
+        case ("%d","Q"):
+            printf("case Q");
+            bio_->action = __BLK_TA_QUEUE;
+
+            break;
+        case ord("I"):
+            printf("case I");
+            bio_->action = __BLK_TA_INSERT;
+            break;
+        case ord("M"):
+            printf("case M");
+            bio_->action = __BLK_TA_BACKMERGE;
+            break;
+        case ord("F"):
+            printf("case F");
+            bio_->action = __BLK_TA_FRONTMERGE;
+            break;
+        case ord("G"):
+            printf("case G");
+            bio_->action = __BLK_TA_GETRQ;
+            break;
+        case ord("S"):
+            printf("case S");
+            bio_->action = __BLK_TA_SLEEPRQ;
+            break;
+        case ord("R"):
+            printf("case R");
+            bio_->action = __BLK_TA_REQUEUE;
+            break;
+        case ord("D"):
+            printf("case D");
+            bio_->action = __BLK_TA_ISSUE;
+            break;
+        case ord("C"):
+            printf("case C");
+            bio_->action = __BLK_TA_COMPLETE;
+            break;
+        case ord("P"):
+            printf("case P");
+            bio_->action = __BLK_TA_PLUG;
+            break;
+        case ord("U"):
+            printf("case U");
+            bio_->action = __BLK_TA_UNPLUG_IO;
+            break;
+        case ord("UT"):
+            printf("case UT");
+            bio_->action = __BLK_TA_UNPLUG_TIMER;
+            break;
+        case ord("X"):
+            printf("case X");
+            bio_->action = __BLK_TA_SPLIT;
+            break;
+        case ord("B"):
+            printf("case B");
+            bio_->action = __BLK_TA_BOUNCE;
+            break;
+        case ord("A"):
+            printf("case A");
+            bio_->action = __BLK_TA_REMAP;
+            break;
+
+        default:
+            fprintf(stderr, "Bad fs action %c\n", act);
+            break;
+    }
+}
+
 struct blk_io_trace get_bit(char * tok[]){
     struct blk_io_trace bio_;
 
@@ -348,7 +418,9 @@ struct blk_io_trace get_bit(char * tok[]){
     __u16 error_status = 0;
     bio_.error = error_status;
     bio_.device = 0; //fix this
-    pdi_ = &devices[0];
+    //pdi_ = &devices[0];
+    char action_id = *tok[5]
+    get_action_code(&bio_, action_id);
     return bio_;
 }
 
