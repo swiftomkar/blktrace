@@ -55,6 +55,18 @@ struct per_dev_info {
     struct per_cpu_info *cpus;
 };
 
+struct ms_stream {
+    struct ms_stream *next;
+    struct trace *first, *last;
+    struct per_dev_info *pdi;
+    unsigned int cpu;
+};
+
+#define MS_HASH(d, c) ((MAJOR(d) & 0xff) ^ (MINOR(d) & 0xff) ^ (cpu & 0xff))
+
+struct ms_stream *ms_head;
+struct ms_stream *ms_hash[256];
+
 /*
  * some duplicated effort here, we can unify this hash and the ppi hash later
  */
@@ -82,6 +94,9 @@ struct per_process_info {
     unsigned long long longest_dispatch_wait[2];
     unsigned long long longest_completion_wait[2];
 };
+
+static struct rb_root rb_sort_root;
+static unsigned long rb_sort_entries;
 
 #define PPI_HASH_SHIFT	(8)
 #define PPI_HASH_SIZE	(1 << PPI_HASH_SHIFT)
@@ -148,6 +163,21 @@ static struct per_dev_info *get_dev_info(dev_t dev)
     pdi->last_read_time = 0;
 
     return pdi;
+}
+
+static struct ms_stream *ms_alloc(struct per_dev_info *pdi, int cpu)
+{
+    struct ms_stream *msp = malloc(sizeof(*msp));
+
+    msp->next = NULL;
+    msp->first = msp->last = NULL;
+    msp->pdi = pdi;
+    msp->cpu = cpu;
+
+    //if (ms_prime(msp))
+    //    ms_sort(msp);
+
+    return msp;
 }
 
 static void resize_cpu_info(struct per_dev_info *pdi, int cpu)
@@ -231,23 +261,6 @@ static struct per_cpu_info *get_cpu_info(struct per_dev_info *pdi, int cpu){
     return pci;
 }
 
-/*
-static struct ms_stream *ms_alloc(struct per_dev_info *pdi, int cpu)
-{
-    struct ms_stream *msp = malloc(sizeof(*msp));
-
-    msp->next = NULL;
-    msp->first = msp->last = NULL;
-    msp->pdi = pdi;
-    msp->cpu = cpu;
-
-    if (ms_prime(msp))
-        ms_sort(msp);
-
-    return msp;
-}
-*/
-
 static int setup_out_file(struct per_dev_info *pdi, int cpu){
     int len = 0;
     char *dname, *p;
@@ -283,7 +296,7 @@ static int setup_out_file(struct per_dev_info *pdi, int cpu){
     //cpu_mark_online(pdi, pci->cpu);
 
     pdi->nfiles++;
-    //ms_alloc(pdi, pci->cpu);
+    ms_alloc(pdi, pci->cpu);
 
     return 1;
 
@@ -327,8 +340,6 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 
 struct blk_io_trace get_bit(char * tok[]){
     struct blk_io_trace bio_;
-    struct per_dev_info pdi_;
-    struct per_cpu_info pci_;
 
     bio_.sequence = (__u32) *tok[2];
     bio_.time = (__u64)unparse_genesis_time+ *tok[3];
@@ -336,7 +347,8 @@ struct blk_io_trace get_bit(char * tok[]){
     bio_.pid = (__u32) *tok[4];
     __u16 error_status = 0;
     bio_.error = error_status;
-
+    bio_.device = 0; //fix this
+    pdi_ = &devices[0];
     return bio_;
 }
 
@@ -344,9 +356,6 @@ static int handle(void){
     ssize_t read;
 
     char * t;
-    struct per_dev_info _pdi;
-    struct per_cpu_info _pci;
-    struct blk_io_trace _bit;
 
     char *delim = " ";
     char *token;
@@ -364,6 +373,7 @@ static int handle(void){
             token = strtok(NULL, delim);
         }
         struct blk_io_trace processed_bit = get_bit(tokens);
+
     }
     return 0;
 }
@@ -371,10 +381,9 @@ static int handle(void){
 static int setup_out_files(void){
     int i, cpu;
     struct per_dev_info *pdi;
-
+    int num_cpus = get_nprocs();
     for (i = 0; i < ndevices; i++) {
         pdi = &devices[i];
-        int num_cpus = get_nprocs();
 
         for (cpu = 0; cpu < num_cpus; cpu++)
             setup_out_file(pdi, cpu);
@@ -390,11 +399,9 @@ int main(int argc, char *argv[]){
         switch (c) {
             case 'i':
                 ip_fstr = optarg;
-                //if (is_pipe(optarg) && !pipeline) {
-                    //pipeline = 1;
-                    //pipename = strdup(optarg);
-                //} else if (resize_devices(optarg) != 0)
-                    //return 1;
+                if(resize_devices(optarg)!=0){
+                    return 1;
+                }
                 break;
 
             case 'd':
@@ -411,31 +418,14 @@ int main(int argc, char *argv[]){
         }
     }
 
+    memset(&rb_sort_root, 0, sizeof(rb_sort_root));
+
     signal(SIGINT, handle_sigint);
     signal(SIGHUP, handle_sigint);
     signal(SIGTERM, handle_sigint);
 
     setlocale(LC_NUMERIC, "en_US");
 
-/*
-    if (dump_binary) {
-        if (!strcmp(dump_binary, "-"))
-            dump_fp = stdout;
-        else {
-            dump_fp = fopen(dump_binary, "w");
-            if (!dump_fp) {
-                perror(dump_binary);
-                dump_binary = NULL;
-                return 1;
-            }
-        }
-        bin_ofp_buffer = malloc(128 * 1024);
-        if (setvbuf(dump_fp, bin_ofp_buffer, _IOFBF, 128 * 1024)) {
-            perror("setvbuf binary");
-            return 1;
-        }
-    }
-*/
     if(ip_fstr){
         printf("%s\n", ip_fstr);
         ip_fp = fopen(ip_fstr, "r");
