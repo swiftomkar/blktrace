@@ -438,18 +438,16 @@ struct blk_io_trace get_bit(char * tok[]){
 
 static int handle(void){
     ssize_t read;
-
     char * t;
-
     char *delim = " ";
     char *token;
-
-
-
     while((read = getline(&line, &len, ip_fp)) != -1){
         t = line;
         char *tokens[20];
         int i=0;
+        struct per_dev_info * device_ptr;
+        struct per_cpu_info * cpu_ptr;
+
         token = strtok(t, delim);
         while(token != NULL) {
             tokens[i] = token;
@@ -457,6 +455,13 @@ static int handle(void){
             token = strtok(NULL, delim);
         }
         struct blk_io_trace processed_bit = get_bit(tokens);
+        device_ptr = &devices[0];
+        cpu_ptr = get_cpu_info(device_ptr, 0);
+        FILE * fp = cpu_ptr->fd;
+
+        fwrite(&processed_bit, sizeof(struct blk_io_trace), 1, fp);
+        //fwrite(device_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
+        //fwrite(cpu_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
 
     }
     return 0;
