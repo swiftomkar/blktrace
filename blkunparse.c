@@ -340,83 +340,83 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 
 void get_action_code(struct blk_io_trace* bio_, char act){
         if (act == *"Q") {
-            printf("case Q");
+            //printf("case Q");
             bio_->action = __BLK_TA_QUEUE;
             //break;
         }
         else if(act == *"I") {
-            printf("case I");
+            //printf("case I");
             bio_->action = __BLK_TA_INSERT;
             //break;
         }
         else if(act == *"M") {
-            printf("case M");
+            //printf("case M");
             bio_->action = __BLK_TA_BACKMERGE;
             //break;
         }
         else if(act == *"F") {
-            printf("case F");
+            //printf("case F");
             bio_->action = __BLK_TA_FRONTMERGE;
             //break;
         }
         else if(act == *"G") {
-            printf("case G");
+            //printf("case G");
             bio_->action = __BLK_TA_GETRQ;
             //break;
         }
         else if(act == *"S") {
-            printf("case S");
+            //printf("case S");
             bio_->action = __BLK_TA_SLEEPRQ;
             //break;
         }
         else if (act == *"R") {
-            printf("case R");
+            //printf("case R");
             bio_->action = __BLK_TA_REQUEUE;
             //break;
         }
         else if(act == *"D") {
-            printf("case D");
+            //printf("case D");
             bio_->action = __BLK_TA_ISSUE;
             //break;
         }
         else if(act == *"C") {
-            printf("case C");
+            //printf("case C");
             bio_->action = __BLK_TA_COMPLETE;
             //break;
         }
         else if(act == *"P") {
-            printf("case P");
+            //printf("case P");
             bio_->action = __BLK_TA_PLUG;
             //break;
         }
         else if(act == *"U") {
-            printf("case U");
+            //printf("case U");
             bio_->action = __BLK_TA_UNPLUG_IO;
             //break;
         }
         else if(act == *"UT") {
-            printf("case UT");
+            //printf("case UT");
             bio_->action = __BLK_TA_UNPLUG_TIMER;
             //break;
         }
         else if(act == *"X") {
-            printf("case X");
+            //printf("case X");
             bio_->action = __BLK_TA_SPLIT;
             //break;
         }
         else if(act == *"B") {
-            printf("case B");
+            //printf("case B");
             bio_->action = __BLK_TA_BOUNCE;
             //break;
         }
         else if(act == *"A") {
-            printf("case A");
+            //printf("case A");
             bio_->action = __BLK_TA_REMAP;
             //break;
         }
         else{
-        fprintf(stderr, "Bad fs action %c\n", act);
-        //break;
+            fprintf(stderr, "Bad fs action %c\n", act);
+            //break;
         }
 }
 
