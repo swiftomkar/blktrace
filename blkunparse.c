@@ -285,7 +285,7 @@ static int setup_out_file(struct per_dev_info *pdi, int cpu){
     snprintf(pci->fname + len, sizeof(pci->fname)-1-len,
              "%s.blktrace.%d", pdi->name, pci->cpu);
 
-    pci->fd = open(pci->fname, O_WRONLY | O_APPEND | O_CREAT, 0644);
+    pci->fd = open(pci->fname, O_APPEND | O_CREAT, 0644);
     if (pci->fd < 0) {
         perror(pci->fname);
         return 0;
@@ -431,10 +431,16 @@ void get_action_code(struct blk_io_trace* bio_, char* tok[]){
 struct blk_io_trace get_bit(char * tok[]){
     struct blk_io_trace bio_;
 
-    bio_.sequence = (__u32) *tok[2];
-    bio_.time = (__u64)unparse_genesis_time+ *tok[3];
-    bio_.cpu = (__u32) *tok[1];
-    bio_.pid = (__u32) *tok[4];
+    int sequence = atoi(tok[2]);
+
+    int time = atoi(tok[3]);
+    int cpu = atoi(tok[1]);
+    int pid = atoi(tok[4]);
+
+    bio_.sequence = (__u32) sequence;
+    bio_.time = (__u64) (unparse_genesis_time+time);
+    bio_.cpu = (__u32) cpu;
+    bio_.pid = (__u32) pid;
     __u16 error_status = 0;
     bio_.error = error_status;
     bio_.device = 0; //fix this
