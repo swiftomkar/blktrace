@@ -472,8 +472,10 @@ static int handle(void){
 
         //char* test_str = "Omkar is stupid";
 
-        fwrite(&processed_bit, sizeof(processed_bit), 1, fp_tmp);
-        fclose(fp_tmp);
+        //fwrite(&processed_bit, sizeof(processed_bit), 1, fp_tmp);
+        //fwrite(&processed_bit, sizeof(processed_bit), 1, cpu_ptr->);
+        write(cpu_ptr->fd, &processed_bit, sizeof(processed_bit));
+        close(cpu_ptr->fd);
         //fwrite(device_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
         //fwrite(cpu_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
 
