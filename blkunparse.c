@@ -375,6 +375,7 @@ void get_action_code(struct blk_io_trace* bio_, char act){
             //break;
         }
         else if(act == *"D") {
+            //this is probably the one
             //printf("case D");
             bio_->action = __BLK_TA_ISSUE;
             //break;
@@ -457,9 +458,11 @@ static int handle(void){
         struct blk_io_trace processed_bit = get_bit(tokens);
         device_ptr = &devices[0];
         cpu_ptr = get_cpu_info(device_ptr, 0);
-        FILE * fp = cpu_ptr->fd;
+        FILE * fp_tmp = fopen("/tmp/blkunparse/test1", "w");
 
-        fwrite(&processed_bit, sizeof(struct blk_io_trace), 1, fp);
+
+
+        fwrite(&processed_bit, sizeof(struct blk_io_trace), 1, fp_tmp);
         //fwrite(device_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
         //fwrite(cpu_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
 
@@ -525,7 +528,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    resize_devices(ip_fstr);
+    //resize_devices(ip_fstr);
 
     ret = setup_out_files();
     if (!ret){
