@@ -338,87 +338,94 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
     done = 1;
 }
 
-void get_action_code(struct blk_io_trace* bio_, char act){
-        if (act == *"Q") {
-            //printf("case Q");
-            bio_->action = __BLK_TA_QUEUE;
-            //break;
-        }
-        else if(act == *"I") {
-            //printf("case I");
-            bio_->action = __BLK_TA_INSERT;
-            //break;
-        }
-        else if(act == *"M") {
-            //printf("case M");
-            bio_->action = __BLK_TA_BACKMERGE;
-            //break;
-        }
-        else if(act == *"F") {
-            //printf("case F");
-            bio_->action = __BLK_TA_FRONTMERGE;
-            //break;
-        }
-        else if(act == *"G") {
-            //printf("case G");
-            bio_->action = __BLK_TA_GETRQ;
-            //break;
-        }
-        else if(act == *"S") {
-            //printf("case S");
-            bio_->action = __BLK_TA_SLEEPRQ;
-            //break;
-        }
-        else if (act == *"R") {
-            //printf("case R");
-            bio_->action = __BLK_TA_REQUEUE;
-            //break;
-        }
-        else if(act == *"D") {
-            //this is probably the one
-            //printf("case D");
-            bio_->action = __BLK_TA_ISSUE;
-            //break;
-        }
-        else if(act == *"C") {
-            //printf("case C");
-            bio_->action = __BLK_TA_COMPLETE;
-            //break;
-        }
-        else if(act == *"P") {
-            //printf("case P");
-            bio_->action = __BLK_TA_PLUG;
-            //break;
-        }
-        else if(act == *"U") {
-            //printf("case U");
-            bio_->action = __BLK_TA_UNPLUG_IO;
-            //break;
-        }
-        else if(act == *"UT") {
-            //printf("case UT");
-            bio_->action = __BLK_TA_UNPLUG_TIMER;
-            //break;
-        }
-        else if(act == *"X") {
-            //printf("case X");
-            bio_->action = __BLK_TA_SPLIT;
-            //break;
-        }
-        else if(act == *"B") {
-            //printf("case B");
-            bio_->action = __BLK_TA_BOUNCE;
-            //break;
-        }
-        else if(act == *"A") {
-            //printf("case A");
-            bio_->action = __BLK_TA_REMAP;
-            //break;
-        }
-        else{
-            fprintf(stderr, "Bad fs action %c\n", act);
-            //break;
-        }
+void process_q(struct blk_io_trace* bio_, char* tok[]){
+    bio_->sector = *tok[7];
+    bio_->bytes = *tok[9];
+}
+
+void get_action_code(struct blk_io_trace* bio_, char* tok[]){
+    char act = *tok[5];
+    if (act == *"Q") {
+        //printf("case Q");
+        bio_->action = __BLK_TA_QUEUE;
+        process_q(bio_, tok);
+        //break;
+    }
+    else if(act == *"I") {
+        //printf("case I");
+        bio_->action = __BLK_TA_INSERT;
+        //break;
+    }
+    else if(act == *"M") {
+        //printf("case M");
+        bio_->action = __BLK_TA_BACKMERGE;
+        //break;
+    }
+    else if(act == *"F") {
+        //printf("case F");
+        bio_->action = __BLK_TA_FRONTMERGE;
+        //break;
+    }
+    else if(act == *"G") {
+        //printf("case G");
+        bio_->action = __BLK_TA_GETRQ;
+        //break;
+    }
+    else if(act == *"S") {
+        //printf("case S");
+        bio_->action = __BLK_TA_SLEEPRQ;
+        //break;
+    }
+    else if (act == *"R") {
+        //printf("case R");
+        bio_->action = __BLK_TA_REQUEUE;
+        //break;
+    }
+    else if(act == *"D") {
+        //this is probably the one
+        //printf("case D");
+        bio_->action = __BLK_TA_ISSUE;
+        //break;
+    }
+    else if(act == *"C") {
+        //printf("case C");
+        bio_->action = __BLK_TA_COMPLETE;
+        //break;
+    }
+    else if(act == *"P") {
+        //printf("case P");
+        bio_->action = __BLK_TA_PLUG;
+        //break;
+    }
+    else if(act == *"U") {
+        //printf("case U");
+        bio_->action = __BLK_TA_UNPLUG_IO;
+        //break;
+    }
+    else if(act == *"UT") {
+        //printf("case UT");
+        bio_->action = __BLK_TA_UNPLUG_TIMER;
+        //break;
+    }
+    else if(act == *"X") {
+        //printf("case X");
+        bio_->action = __BLK_TA_SPLIT;
+        //break;
+    }
+    else if(act == *"B") {
+        //printf("case B");
+        bio_->action = __BLK_TA_BOUNCE;
+        //break;
+    }
+    else if(act == *"A") {
+        //printf("case A");
+        bio_->action = __BLK_TA_REMAP;
+        //break;
+    }
+    else{
+        fprintf(stderr, "Bad fs action %c\n", act);
+        //break;
+    }
 }
 
 struct blk_io_trace get_bit(char * tok[]){
@@ -432,8 +439,7 @@ struct blk_io_trace get_bit(char * tok[]){
     bio_.error = error_status;
     bio_.device = 0; //fix this
     //pdi_ = &devices[0];
-    char action_id = *tok[5];
-    get_action_code(&bio_, action_id);
+    get_action_code(&bio_, tok);
     return bio_;
 }
 
@@ -458,11 +464,16 @@ static int handle(void){
         struct blk_io_trace processed_bit = get_bit(tokens);
         device_ptr = &devices[0];
         cpu_ptr = get_cpu_info(device_ptr, 0);
-        FILE * fp_tmp = fopen("/tmp/blkunparse/test1", "w");
+        FILE * fp_tmp;
+        if ((fp_tmp = fopen("/tmp/blkunparse/test1", "ab"))==NULL){
+            printf("Error! opening file");
+            return 1;
+        }
 
+        //char* test_str = "Omkar is stupid";
 
-
-        fwrite(&processed_bit, sizeof(struct blk_io_trace), 1, fp_tmp);
+        fwrite(&processed_bit, sizeof(processed_bit), 1, fp_tmp);
+        fclose(fp_tmp);
         //fwrite(device_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
         //fwrite(cpu_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
 
