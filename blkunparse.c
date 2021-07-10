@@ -463,12 +463,12 @@ static int handle(void){
         }
         struct blk_io_trace processed_bit = get_bit(tokens);
         device_ptr = &devices[0];
-        cpu_ptr = get_cpu_info(device_ptr, 0);
-        FILE * fp_tmp;
-        if ((fp_tmp = fopen("/tmp/blkunparse/test1", "ab"))==NULL){
-            printf("Error! opening file");
-            return 1;
-        }
+        cpu_ptr = get_cpu_info(device_ptr, processed_bit.cpu);
+        //FILE * fp_tmp;
+        //if ((fp_tmp = fopen("/tmp/blkunparse/test1", "ab"))==NULL){
+        //    printf("Error! opening file");
+        //    return 1;
+        //}
 
         //char* test_str = "Omkar is stupid";
 
