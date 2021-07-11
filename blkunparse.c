@@ -285,7 +285,7 @@ static int setup_out_file(struct per_dev_info *pdi, int cpu){
     snprintf(pci->fname + len, sizeof(pci->fname)-1-len,
              "%s.blktrace.%d", pdi->name, pci->cpu);
 
-    pci->fd = open(pci->fname, O_APPEND | O_CREAT, 0644);
+    pci->fd = open(pci->fname, O_RDWR | O_CREAT, 0644);
     if (pci->fd < 0) {
         perror(pci->fname);
         return 0;
@@ -339,8 +339,10 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 }
 
 void process_q(struct blk_io_trace* bio_, char* tok[]){
-    bio_->sector = *tok[7];
-    bio_->bytes = *tok[9];
+    int sector = atoi(tok[7]);
+    int bytes = atoi(tok[9]);
+    bio_->sector = (__u64) sector;
+    bio_->bytes = (__u32) bytes;
 }
 
 void get_action_code(struct blk_io_trace* bio_, char* tok[]){
@@ -476,12 +478,13 @@ static int handle(void){
         //    return 1;
         //}
 
-        //char* test_str = "Omkar is stupid";
+        char* test_str = "Omkar is stupid";
 
         //fwrite(&processed_bit, sizeof(processed_bit), 1, fp_tmp);
         //fwrite(&processed_bit, sizeof(processed_bit), 1, cpu_ptr->);
-        write(cpu_ptr->fd, &processed_bit, sizeof(processed_bit));
-        close(cpu_ptr->fd);
+        write(cpu_ptr->fd, &processed_bit, 48);
+
+        //close(cpu_ptr->fd);
         //fwrite(device_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
         //fwrite(cpu_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
 
