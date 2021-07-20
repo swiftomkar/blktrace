@@ -496,6 +496,7 @@ static int setup_out_files(void){
     int i, cpu;
     struct per_dev_info *pdi;
     int num_cpus = get_nprocs();
+    //static int ncpus = sysconf(_SC_NPROCESSORS_ONLN);
     for (i = 0; i < ndevices; i++) {
         pdi = &devices[i];
 
