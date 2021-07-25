@@ -28,6 +28,7 @@ Each blocktrace record contains the following fields
 //#include "jhash.h"
 
 static char blkunparse_version[] = "0.1";
+int data_is_native = -1;
 
 struct per_dev_info {
     dev_t dev;
@@ -121,6 +122,8 @@ static char *ip_fstr;
 FILE * btrace_fp;
 char * line = NULL;
 size_t len = 0;
+
+int num_cpus;
 
 unsigned long unparse_genesis_time;
 
@@ -356,26 +359,31 @@ void get_action_code(struct blk_io_trace* bio_, char* tok[]){
     else if(act == *"I") {
         //printf("case I");
         bio_->action = __BLK_TA_INSERT;
+        process_q(bio_, tok);
         //break;
     }
     else if(act == *"M") {
         //printf("case M");
         bio_->action = __BLK_TA_BACKMERGE;
+        process_q(bio_, tok);
         //break;
     }
     else if(act == *"F") {
         //printf("case F");
         bio_->action = __BLK_TA_FRONTMERGE;
+        process_q(bio_, tok);
         //break;
     }
     else if(act == *"G") {
         //printf("case G");
         bio_->action = __BLK_TA_GETRQ;
+        process_q(bio_, tok);
         //break;
     }
     else if(act == *"S") {
         //printf("case S");
         bio_->action = __BLK_TA_SLEEPRQ;
+        process_q(bio_, tok);
         //break;
     }
     else if (act == *"R") {
@@ -387,11 +395,13 @@ void get_action_code(struct blk_io_trace* bio_, char* tok[]){
         //this is probably the one
         //printf("case D");
         bio_->action = __BLK_TA_ISSUE;
+        process_q(bio_, tok);
         //break;
     }
     else if(act == *"C") {
         //printf("case C");
         bio_->action = __BLK_TA_COMPLETE;
+        process_q(bio_, tok);
         //break;
     }
     else if(act == *"P") {
@@ -417,6 +427,7 @@ void get_action_code(struct blk_io_trace* bio_, char* tok[]){
     else if(act == *"B") {
         //printf("case B");
         bio_->action = __BLK_TA_BOUNCE;
+        process_q(bio_, tok);
         //break;
     }
     else if(act == *"A") {
@@ -439,13 +450,14 @@ struct blk_io_trace get_bit(char * tok[]){
     int cpu = atoi(tok[1]);
     int pid = atoi(tok[4]);
 
+    bio_.magic = BLK_IO_TRACE_MAGIC;
     bio_.sequence = (__u32) sequence;
     bio_.time = (__u64) (unparse_genesis_time+time);
     bio_.cpu = (__u32) cpu;
     bio_.pid = (__u32) pid;
     __u16 error_status = 0;
     bio_.error = error_status;
-    bio_.device = 0; //fix this
+    bio_.device = 0x00080000; //fix this
     //pdi_ = &devices[0];
     get_action_code(&bio_, tok);
     return bio_;
@@ -472,21 +484,10 @@ static int handle(void){
         struct blk_io_trace processed_bit = get_bit(tokens);
         device_ptr = &devices[0];
         cpu_ptr = get_cpu_info(device_ptr, (processed_bit.cpu%8));
-        //FILE * fp_tmp;
-        //if ((fp_tmp = fopen("/tmp/blkunparse/test1", "ab"))==NULL){
-        //    printf("Error! opening file");
-        //    return 1;
-        //}
 
-        char* test_str = "Omkar is stupid";
+        //trace_to_cpu(&processed_bit); is this necessary?
 
-        //fwrite(&processed_bit, sizeof(processed_bit), 1, fp_tmp);
-        //fwrite(&processed_bit, sizeof(processed_bit), 1, cpu_ptr->);
-        write(cpu_ptr->fd, &processed_bit, 48);
-
-        //close(cpu_ptr->fd);
-        //fwrite(device_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
-        //fwrite(cpu_ptr, sizeof(struct blk_io_trace), 1, cpu_ptr->fd);
+        write(cpu_ptr->fd, &processed_bit, sizeof(struct blk_io_trace));
 
     }
     return 0;
@@ -495,7 +496,7 @@ static int handle(void){
 static int setup_out_files(void){
     int i, cpu;
     struct per_dev_info *pdi;
-    int num_cpus = get_nprocs();
+    num_cpus = get_nprocs();
     //static int ncpus = sysconf(_SC_NPROCESSORS_ONLN);
     for (i = 0; i < ndevices; i++) {
         pdi = &devices[i];
@@ -508,7 +509,6 @@ static int setup_out_files(void){
 
 int main(int argc, char *argv[]){
     int c, ret;
-    char *bin_ofp_buffer = NULL;
 
     while ((c = getopt_long(argc, argv, S_OPTS, l_opts, NULL)) != -1) {
         switch (c) {
@@ -533,7 +533,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    memset(&rb_sort_root, 0, sizeof(rb_sort_root));
+    //memset(&rb_sort_root, 0, sizeof(rb_sort_root));
 
     signal(SIGINT, handle_sigint);
     signal(SIGHUP, handle_sigint);
@@ -560,6 +560,8 @@ int main(int argc, char *argv[]){
     }
     unparse_genesis_time = time(NULL);
     ret = handle();
+    //for (int cpu = 0; cpu < num_cpus; cpu++)
+    //    close(pci->fname);
 
     // we have created the output files and also opened the input file
     // read each line from the file and process it now.That is it!
