@@ -446,20 +446,21 @@ struct blk_io_trace get_bit(char * tok[]){
 
     int sequence = atoi(tok[2])-1;
 
-    int time = atoi(tok[3]);
+    unsigned long time = atoi(tok[3]);
     int cpu = atoi(tok[1]);
     int pid = atoi(tok[4]);
 
-    bio_.magic = BLK_IO_TRACE_MAGIC | BLK_IO_TRACE_VERSION; //0x07746165; //BLK_IO_TRACE_MAGIC;
+    bio_.magic = BLK_IO_TRACE_MAGIC | BLK_IO_TRACE_VERSION;
     bio_.sequence = (__u32) sequence;
-    bio_.time = (__u64) (unparse_genesis_time+time);
+    unsigned long i_time = unparse_genesis_time+time;
+    bio_.time = (__u64) i_time;
     bio_.cpu = (__u32) cpu;
     bio_.pid = (__u32) pid;
     __u16 error_status = 0;
     __u16 pdu_len = 0;
     bio_.error = error_status;
     bio_.pdu_len = pdu_len;
-    bio_.device = 0x00080000; //fix this
+    bio_.device = 0x0; //fix this
     //pdi_ = &devices[0];
     get_action_code(&bio_, tok);
     return bio_;
