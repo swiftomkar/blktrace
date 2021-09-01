@@ -125,7 +125,7 @@ size_t len = 0;
 
 int num_cpus;
 
-unsigned long unparse_genesis_time;
+__u64 unparse_genesis_time;
 
 #define is_done()	(*(volatile int *)(&done))
 static volatile int done;
@@ -341,6 +341,13 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
     done = 1;
 }
 
+void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
+    int sector = atoi(tok[7]);
+    int bytes = atoi(tok[9]);
+    bio_->sector = (__u64) sector;
+    bio_->bytes = (__u32) bytes;
+}
+
 void process_q(struct blk_io_trace* bio_, char* tok[]){
     int sector = atoi(tok[7]);
     int bytes = atoi(tok[9]);
@@ -348,95 +355,119 @@ void process_q(struct blk_io_trace* bio_, char* tok[]){
     bio_->bytes = (__u32) bytes;
 }
 
+void process_a(struct blk_io_trace* bio_, char* tok[]){
+    int sector = atoi(tok[7]);
+    int bytes = atoi(tok[9]);
+    bio_->sector = (__u64) sector;
+    bio_->bytes = (__u32) bytes;
+}
+
+
+void process_c(struct blk_io_trace* bio_, char* tok[]){
+    int sector = atoi(tok[7]);
+    int bytes = atoi(tok[9]);
+    bio_->sector = (__u64) sector;
+    bio_->bytes = (u32) bytes;
+}
+
 void get_action_code(struct blk_io_trace* bio_, char* tok[]){
-    char act = *tok[5];
-    if (act == *"Q") {
+    char *act = tok[5];
+    //printf("Action code is %s\n", act);
+    if (strcmp(act, "Q")==0) {
         //printf("case Q");
-        bio_->action = BLK_TA_QUEUE;
-        process_q(bio_, tok);
+        bio_->action = BLK_TA_QUEUE; //00011010 latency and resp time
+
+        //process_q(bio_, tok);
         //break;
     }
-    else if(act == *"I") {
+    else if(strcmp(act, "I")==0) {
         //printf("case I");
         bio_->action = BLK_TA_INSERT;
-        process_q(bio_, tok);
+        //process_q(bio_, tok);
         //break;
     }
-    else if(act == *"M") {
+    else if(strcmp(act, "M")==0) {
         //printf("case M");
         bio_->action = BLK_TA_BACKMERGE;
-        process_q(bio_, tok);
+        //process_q(bio_, tok);
         //break;
     }
-    else if(act == *"F") {
+    else if(strcmp(act, "F")==0) {
         //printf("case F");
         bio_->action = BLK_TA_FRONTMERGE;
-        process_q(bio_, tok);
+        //process_q(bio_, tok);
         //break;
     }
-    else if(act == *"G") {
+    else if(strcmp(act, "G")==0) {
         //printf("case G");
         bio_->action = BLK_TA_GETRQ;
-        process_q(bio_, tok);
+        //process_q(bio_, tok);
         //break;
     }
-    else if(act == *"S") {
+    else if(strcmp(act, "S")==0) {
         //printf("case S");
         bio_->action = BLK_TA_SLEEPRQ;
         process_q(bio_, tok);
         //break;
     }
-    else if (act == *"R") {
+    else if (strcmp(act, "R")==0) {
         //printf("case R");
         bio_->action = BLK_TA_REQUEUE;
+        //process_q(bio_, tok); //new
         //break;
     }
-    else if(act == *"D") {
+    else if(strcmp(act, "D")==0) {
         //this is probably the one
         //printf("case D");
         bio_->action = BLK_TA_ISSUE;
-        process_q(bio_, tok);
+        //process_q(bio_, tok);
         //break;
     }
-    else if(act == *"C") {
+    else if(strcmp(act, "C")==0) {
         //printf("case C");
         bio_->action = BLK_TA_COMPLETE;
-        process_q(bio_, tok);
+        //process_c(bio_, tok);
         //break;
     }
-    else if(act == *"P") {
+    else if(strcmp(act, "P")==0) {
         //printf("case P");
         bio_->action = BLK_TA_PLUG;
+        //process_q(bio_, tok); //new
         //break;
     }
-    else if(act == *"U") {
+    else if(strcmp(act, "U")==0) {
         //printf("case U");
         bio_->action = BLK_TA_UNPLUG_IO;
+        //process_q(bio_, tok); //new
         //break;
     }
-    else if(act == *"UT") {
+    else if(strcmp(act, "UT")==0) {
         //printf("case UT");
         bio_->action = BLK_TA_UNPLUG_TIMER;
+        //process_q(bio_, tok); //new
         //break;
     }
-    else if(act == *"X") {
+    else if(strcmp(act, "X")==0) {
         //printf("case X");
         bio_->action = BLK_TA_SPLIT;
+        //process_q(bio_, tok); //new
         //break;
     }
-    else if(act == *"B") {
+    else if(strcmp(act, "B")==0) {
         //printf("case B");
         bio_->action = BLK_TA_BOUNCE;
-        process_q(bio_, tok);
+        //process_q(bio_, tok);
         //break;
     }
-    else if(act == *"A") {
+    else if(strcmp(act, "A")==0) {
         //printf("case A");
         bio_->action = BLK_TA_REMAP;
+        //process_a(bio_, tok); //new
         //break;
     }
     else{
-        fprintf(stderr, "Bad fs action %c\n", act);
+        fprintf(stderr, "Bad fs action code %s\n", act);
+        //fprintf(stderr, "Bad fs action %c\n", act);
         //break;
     }
 }
@@ -444,23 +475,38 @@ void get_action_code(struct blk_io_trace* bio_, char* tok[]){
 struct blk_io_trace get_bit(char * tok[]){
     struct blk_io_trace bio_;
 
-    int sequence = atoi(tok[2])-1;
+    int sequence = atoi(tok[2]);
 
-    unsigned long time = atoi(tok[3]);
+    char * time_parts;
+    char *delim = ".";
+    int i=0;
+    char *time_arr[2];
+    time_parts = strtok(tok[3], delim);
+    while(time_parts != NULL) {
+        time_arr[i] = time_parts;
+        i++;
+        time_parts = strtok(NULL, delim);
+    }
+    __u64 time = unparse_genesis_time + ((atoi(time_arr[0])*1000000000)+atoi(time_arr[1]));
+
+    //unsigned long time = atoi(tok[3]);
     int cpu = atoi(tok[1]);
     int pid = atoi(tok[4]);
 
     bio_.magic = BLK_IO_TRACE_MAGIC | BLK_IO_TRACE_VERSION;
     bio_.sequence = (__u32) sequence;
-    unsigned long i_time = unparse_genesis_time+time;
-    bio_.time = (__u64) i_time;
+    //unsigned long i_time = unparse_genesis_time+time;
+    //bio_.time = (__u64) time;
+    bio_.time = time;
     bio_.cpu = (__u32) cpu;
     bio_.pid = (__u32) pid;
     __u16 error_status = 0;
     __u16 pdu_len = 0;
     bio_.error = error_status;
     bio_.pdu_len = pdu_len;
-    bio_.device = 0x0; //fix this
+    //printf("%d  %d\n", atoi(tok[0]), atoi(tok[1]));
+    bio_.device = atoi(tok[0]);
+    //bio_.device = 0x0; //fix this
     //pdi_ = &devices[0];
     get_action_code(&bio_, tok);
     return bio_;
@@ -488,7 +534,7 @@ static int handle(void){
         device_ptr = &devices[0];
         cpu_ptr = get_cpu_info(device_ptr, (processed_bit.cpu%8));
 
-        //trace_to_cpu(&processed_bit); is this necessary?
+        //trace_to_cpu(&processed_bit); //is this necessary?
 
         write(cpu_ptr->fd, &processed_bit, sizeof(struct blk_io_trace));
 
@@ -562,12 +608,8 @@ int main(int argc, char *argv[]){
         return ret;
     }
     unparse_genesis_time = time(NULL);
+    unparse_genesis_time = unparse_genesis_time*1000000000;
     ret = handle();
-    //for (int cpu = 0; cpu < num_cpus; cpu++)
-    //    close(pci->fname);
-
-    // we have created the output files and also opened the input file
-    // read each line from the file and process it now.That is it!
 
     return ret;
 }

@@ -7,22 +7,22 @@
  * Trace categories
  */
 enum {
-	BLK_TC_READ	= 1 << 0,	/* reads */
+	BLK_TC_READ	    = 1 << 0,	/* reads */
 	BLK_TC_WRITE	= 1 << 1,	/* writes */
 	BLK_TC_FLUSH	= 1 << 2,	/* flush */
-	BLK_TC_SYNC	= 1 << 3,	/* sync */
+	BLK_TC_SYNC	    = 1 << 3,	/* sync */
 	BLK_TC_QUEUE	= 1 << 4,	/* queueing/merging */
 	BLK_TC_REQUEUE	= 1 << 5,	/* requeueing */
 	BLK_TC_ISSUE	= 1 << 6,	/* issue */
 	BLK_TC_COMPLETE	= 1 << 7,	/* completions */
-	BLK_TC_FS	= 1 << 8,	/* fs requests */
-	BLK_TC_PC	= 1 << 9,	/* pc requests */
+	BLK_TC_FS	    = 1 << 8,	/* fs requests */
+	BLK_TC_PC	    = 1 << 9,	/* pc requests */
 	BLK_TC_NOTIFY	= 1 << 10,	/* special message */
 	BLK_TC_AHEAD	= 1 << 11,	/* readahead */
-	BLK_TC_META	= 1 << 12,	/* metadata */
+	BLK_TC_META	    = 1 << 12,	/* metadata */
 	BLK_TC_DISCARD	= 1 << 13,	/* discard requests */
 	BLK_TC_DRV_DATA	= 1 << 14,	/* binary driver data */
-	BLK_TC_FUA	= 1 << 15,	/* fua requests */
+	BLK_TC_FUA	    = 1 << 15,	/* fua requests */
 
 	BLK_TC_END	= 1 << 15,	/* we've run out of bits! */
 };
