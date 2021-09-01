@@ -386,6 +386,10 @@ void get_rwbs(struct blk_io_trace* bio_, char* tok[]){
             bio_->action |= BLK_TC_ACT(BLK_TC_FLUSH);
         else if(rwbs[i] == 'S')
             bio_->action |= BLK_TC_ACT(BLK_TC_SYNC);
+        else if(rwbs[i] == 'N')
+            bio_->action |= BLK_TC_ACT(BLK_TC_NOTIFY);
+        else if(rwbs[i] == 'M')
+            bio_->action |= BLK_TC_ACT(BLK_TC_META);
     }
 
 }
