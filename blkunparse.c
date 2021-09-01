@@ -370,12 +370,32 @@ void process_c(struct blk_io_trace* bio_, char* tok[]){
     bio_->bytes = (u32) bytes;
 }
 
+void get_rwbs(struct blk_io_trace* bio_, char* tok[]){
+    char *rwbs = tok[6];
+    char rwbs_0 = rwbs[0];
+    //if sizeof(rwbs)/8 = 1;
+    char rwbs_1 = rwbs[1];
+    if(rwbs_0 == 'W')
+        bio_->action |= BLK_TC_ACT(BLK_TC_WRITE);
+    else if(rwbs_0 == 'R')
+        bio_->action |= BLK_TC_ACT(BLK_TC_READ);
+    else(rwbs_0 == 'D')
+        bio_->action |= BLK_TC_ACT(BLK_TC_DISCARD);
+
+    if(rwbs_1 == 'S')
+        bio_->action |= BLK_TC_ACT(BLK_TC_SYNC);
+}
+
 void get_action_code(struct blk_io_trace* bio_, char* tok[]){
     char *act = tok[5];
     //printf("Action code is %s\n", act);
     if (strcmp(act, "Q")==0) {
         //printf("case Q");
-        bio_->action = BLK_TA_QUEUE; //00011010 latency and resp time
+        bio_->action = BLK_TA_QUEUE; //0001|1010 latency and resp time
+        //bio_->action |= 1 << (16+1);
+        //bio_->action |= BLK_TC_ACT(BLK_TC_WRITE);
+        //bio_->action |= BLK_TC_ACT(BLK_TC_SYNC);
+        //bio_->action |= BLK_TC_ACT(BLK_TC_QUEUE);
 
         //process_q(bio_, tok);
         //break;
@@ -509,6 +529,7 @@ struct blk_io_trace get_bit(char * tok[]){
     //bio_.device = 0x0; //fix this
     //pdi_ = &devices[0];
     get_action_code(&bio_, tok);
+    process_rwbs(&bio_, tok);
     return bio_;
 }
 
