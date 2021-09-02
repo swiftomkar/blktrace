@@ -343,31 +343,31 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 
 void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     int sector = atoi(tok[7]);
-    int bytes = atoi(tok[9]);
+    int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
-    bio_->bytes = (__u32) bytes;
-}
-
-void process_q(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7]);
-    int bytes = atoi(tok[9]);
-    bio_->sector = (__u64) sector;
-    bio_->bytes = (__u32) bytes;
+    bio_->bytes = bytes;
 }
 
 void process_a(struct blk_io_trace* bio_, char* tok[]){
     int sector = atoi(tok[7]);
-    int bytes = atoi(tok[9]);
+    int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
-    bio_->bytes = (__u32) bytes;
+    bio_->bytes = bytes;
 }
 
 
 void process_c(struct blk_io_trace* bio_, char* tok[]){
     int sector = atoi(tok[7]);
-    int bytes = atoi(tok[9]);
+    int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
-    bio_->bytes = (u32) bytes;
+    bio_->bytes = bytes;
+}
+
+void process_fgms(struct blk_io_trace* bio_, char* tok[]){
+    int sector = atoi(tok[7]);
+    int bytes = atoi(tok[9])*512;
+    bio_->sector = (__u64) sector;
+    bio_->bytes = bytes;
 }
 
 void get_rwbs(struct blk_io_trace* bio_, char* tok[]){
@@ -397,109 +397,110 @@ void get_rwbs(struct blk_io_trace* bio_, char* tok[]){
 void get_action_code(struct blk_io_trace* bio_, char* tok[]){
     char *act = tok[5];
     //printf("Action code is %s\n", act);
-    if (strcmp(act, "Q")==0) {
-        //printf("case Q");
-        bio_->action = BLK_TA_QUEUE; //0001|1010 latency and resp time
-        //bio_->action |= 1 << (16+1);
-        //bio_->action |= BLK_TC_ACT(BLK_TC_WRITE);
-        //bio_->action |= BLK_TC_ACT(BLK_TC_SYNC);
-        //bio_->action |= BLK_TC_ACT(BLK_TC_QUEUE);
-
-        //process_q(bio_, tok);
-        //break;
-    }
-    else if(strcmp(act, "I")==0) {
-        //printf("case I");
-        bio_->action = BLK_TA_INSERT;
-        //process_q(bio_, tok);
-        //break;
-    }
-    else if(strcmp(act, "M")==0) {
-        //printf("case M");
-        bio_->action = BLK_TA_BACKMERGE;
-        //process_q(bio_, tok);
-        //break;
-    }
-    else if(strcmp(act, "F")==0) {
-        //printf("case F");
-        bio_->action = BLK_TA_FRONTMERGE;
-        //process_q(bio_, tok);
-        //break;
-    }
-    else if(strcmp(act, "G")==0) {
-        //printf("case G");
-        bio_->action = BLK_TA_GETRQ;
-        //process_q(bio_, tok);
-        //break;
-    }
-    else if(strcmp(act, "S")==0) {
-        //printf("case S");
-        bio_->action = BLK_TA_SLEEPRQ;
-        process_q(bio_, tok);
-        //break;
-    }
-    else if (strcmp(act, "R")==0) {
-        //printf("case R");
-        bio_->action = BLK_TA_REQUEUE;
-        //process_q(bio_, tok); //new
-        //break;
-    }
-    else if(strcmp(act, "D")==0) {
-        //this is probably the one
-        //printf("case D");
-        bio_->action = BLK_TA_ISSUE;
-        //process_q(bio_, tok);
-        //break;
-    }
-    else if(strcmp(act, "C")==0) {
-        //printf("case C");
-        bio_->action = BLK_TA_COMPLETE;
-        //process_c(bio_, tok);
-        //break;
-    }
-    else if(strcmp(act, "P")==0) {
-        //printf("case P");
-        bio_->action = BLK_TA_PLUG;
-        //process_q(bio_, tok); //new
-        //break;
-    }
-    else if(strcmp(act, "U")==0) {
-        //printf("case U");
-        bio_->action = BLK_TA_UNPLUG_IO;
-        //process_q(bio_, tok); //new
-        //break;
-    }
-    else if(strcmp(act, "UT")==0) {
-        //printf("case UT");
-        bio_->action = BLK_TA_UNPLUG_TIMER;
-        //process_q(bio_, tok); //new
-        //break;
-    }
-    else if(strcmp(act, "X")==0) {
-        //printf("case X");
-        bio_->action = BLK_TA_SPLIT;
-        //process_q(bio_, tok); //new
-        //break;
-    }
-    else if(strcmp(act, "B")==0) {
-        //printf("case B");
-        bio_->action = BLK_TA_BOUNCE;
-        //process_q(bio_, tok);
-        //break;
-    }
-    else if(strcmp(act, "A")==0) {
-        //printf("case A");
-        bio_->action = BLK_TA_REMAP;
-        //process_a(bio_, tok); //new
-        //break;
-    }
-    else{
-        fprintf(stderr, "Bad fs action code %s\n", act);
-        //fprintf(stderr, "Bad fs action %c\n", act);
-        //break;
+    for(int i =0; i<strlen(act); i++) {
+        if (act[i] == 'Q') {
+            //printf("case Q");
+            bio_->action = BLK_TA_QUEUE; //0001|1010 latency and resp time
+            //bio_->sector = (__u64)atoi(tok[7]);
+            //bio_->bytes = atoi(tok[9])*512;
+            //printf("%s\n", tok[10]);
+            process_bdiq(bio_, tok);
+            //break;
+        } else if (act[i] == 'I') {
+            //printf("case I");
+            bio_->action = BLK_TA_INSERT;
+            process_bdiq(bio_, tok);
+            //break;
+        } else if (act[i] == 'M') {
+            //printf("case M");
+            bio_->action = BLK_TA_BACKMERGE;
+            process_fgms(bio_, tok);
+            //break;
+        } else if (act[i] == 'F') {
+            //printf("case F");
+            bio_->action = BLK_TA_FRONTMERGE;
+            process_fgms(bio_, tok);
+            //break;
+        } else if (act[i] == 'G') {
+            //printf("case G");
+            bio_->action = BLK_TA_GETRQ;
+            process_fgms(bio_, tok);
+            //break;
+        } else if (act[i] == 'S') {
+            //printf("case S");
+            bio_->action = BLK_TA_SLEEPRQ;
+            process_fgms(bio_, tok);
+            //break;
+        } else if (act[i] == 'R') {
+            //printf("case R");
+            bio_->action = BLK_TA_REQUEUE;
+            //process_q(bio_, tok); //new
+            //break;
+        } else if (act[i] == 'D') {
+            //this is probably the one
+            //printf("case D");
+            bio_->action = BLK_TA_ISSUE;
+            process_bdiq(bio_, tok);
+            //break;
+        } else if (act[i] == 'C') {
+            //printf("case C");
+            bio_->action = BLK_TA_COMPLETE;
+            process_c(bio_, tok);
+            //break;
+        } else if (act[i] == 'P') {
+            //printf("case P");
+            bio_->action = BLK_TA_PLUG;
+            //process_q(bio_, tok); //new
+            //break;
+        } else if (act[i] == 'U') {
+            //printf("case U");
+            bio_->action = BLK_TA_UNPLUG_IO;
+            //process_q(bio_, tok); //new
+            //break;
+        } else if (act[i] == 'T') {
+            //printf("case UT");
+            bio_->action = BLK_TA_UNPLUG_TIMER;
+            //process_q(bio_, tok); //new
+            //break;
+        } else if (act[i] == 'X') {
+            //printf("case X");
+            bio_->action = BLK_TA_SPLIT;
+            //process_q(bio_, tok); //new
+            //break;
+        } else if (act[i] == 'B') {
+            //printf("case B");
+            bio_->action = BLK_TA_BOUNCE;
+            process_bdiq(bio_, tok);
+            //break;
+        } else if (act[i] == 'A') {
+            //printf("case A");
+            bio_->action = BLK_TA_REMAP;
+            //bio_->sector = atoi(tok[7]);
+            //bio_->bytes = atoi(tok[9])*512;
+            process_a(bio_, tok); //new
+            //break;
+        } else {
+            fprintf(stderr, "Bad fs action code %s\n", act);
+            //fprintf(stderr, "Bad fs action %c\n", act);
+            //break;
+        }
     }
 }
 
+void get_device_code(struct blk_io_trace* bio_, char* tok){
+    char* token;
+    char* delim = ",";
+    char* tokens[2];
+    int i=0;
+    token = strtok(tok, delim);
+    __u32 device_coding=1;
+    while(token != NULL) {
+        tokens[i] = token;
+        i++;
+        token = strtok(NULL, delim);
+    }
+    bio_->device = atoi(tokens[0]) << 20 | atoi(tokens[1]);
+}
 struct blk_io_trace get_bit(char * tok[]){
     struct blk_io_trace bio_;
 
@@ -532,10 +533,7 @@ struct blk_io_trace get_bit(char * tok[]){
     __u16 pdu_len = 0;
     bio_.error = error_status;
     bio_.pdu_len = pdu_len;
-    //printf("%d  %d\n", atoi(tok[0]), atoi(tok[1]));
-    bio_.device = atoi(tok[0]);
-    //bio_.device = 0x0; //fix this
-    //pdi_ = &devices[0];
+    get_device_code(&bio_, tok[0]);
     get_action_code(&bio_, tok);
     get_rwbs(&bio_, tok);
     return bio_;
@@ -562,8 +560,6 @@ static int handle(void){
         struct blk_io_trace processed_bit = get_bit(tokens);
         device_ptr = &devices[0];
         cpu_ptr = get_cpu_info(device_ptr, (processed_bit.cpu%8));
-
-        //trace_to_cpu(&processed_bit); //is this necessary?
 
         write(cpu_ptr->fd, &processed_bit, sizeof(struct blk_io_trace));
 
