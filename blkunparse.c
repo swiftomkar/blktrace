@@ -516,8 +516,8 @@ struct blk_io_trace get_bit(char * tok[]){
         time_parts = strtok(NULL, delim);
     }
     //__u64 time = unparse_genesis_time + ((atoi(time_arr[0])*1000000000)+atoi(time_arr[1]));
-    __u64 time = unparse_genesis_time; //+ atoi(time_arr[0]);//+atoi(time_arr[1]));
-    unparse_genesis_time++;
+    __u64 time = (atoi(time_arr[0])*1000000000.0)+atoi(time_arr[1]);
+    //printf("%s.%s\t %f\n", time_arr[0], time_arr[1], atoi(time_arr[0])*1000000000.0);
 
     //unsigned long time = atoi(tok[3]);
     int cpu = atoi(tok[1])%8;
@@ -633,8 +633,9 @@ int main(int argc, char *argv[]){
         perror("output file creation error\n");
         return ret;
     }
-    unparse_genesis_time = time(NULL);
-    unparse_genesis_time = unparse_genesis_time*1000000000;
+    //unparse_genesis_time = time(NULL);
+    unparse_genesis_time = 0.0;
+    //unparse_genesis_time = unparse_genesis_time*1000000000;
     ret = handle();
 
     return ret;
