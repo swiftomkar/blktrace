@@ -25,7 +25,6 @@ Each blocktrace record contains the following fields
 #include "blktrace.h"
 #include "rbtree.h"
 #include "blktrace_api.h"
-//#include "jhash.h"
 
 static char blkunparse_version[] = "0.1";
 int data_is_native = -1;
@@ -342,14 +341,14 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 }
 
 void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7]);
+    int sector = atoi(tok[7])%390625000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
 
 void process_a(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7]);
+    int sector = atoi(tok[7])%390625000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -357,14 +356,14 @@ void process_a(struct blk_io_trace* bio_, char* tok[]){
 
 
 void process_c(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7]);
+    int sector = atoi(tok[7])%390625000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
 
 void process_fgms(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7]);
+    int sector = atoi(tok[7])%390625000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -516,10 +515,12 @@ struct blk_io_trace get_bit(char * tok[]){
         i++;
         time_parts = strtok(NULL, delim);
     }
-    __u64 time = unparse_genesis_time + ((atoi(time_arr[0])*1000000000)+atoi(time_arr[1]));
+    //__u64 time = unparse_genesis_time + ((atoi(time_arr[0])*1000000000)+atoi(time_arr[1]));
+    __u64 time = unparse_genesis_time; //+ atoi(time_arr[0]);//+atoi(time_arr[1]));
+    unparse_genesis_time++;
 
     //unsigned long time = atoi(tok[3]);
-    int cpu = atoi(tok[1]);
+    int cpu = atoi(tok[1])%8;
     int pid = atoi(tok[4]);
 
     bio_.magic = BLK_IO_TRACE_MAGIC | BLK_IO_TRACE_VERSION;
