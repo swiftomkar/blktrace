@@ -343,8 +343,9 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 
 void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     //CHANGE FOR systor
-    int sector = atoi(tok[5])%390625000;
-    int bytes = atoi(tok[6]);
+    __u64 sector = (atof(tok[4])/512);//%390625000;
+    sector = sector%390625000;
+    int bytes = atoi(tok[5]);
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
@@ -398,6 +399,8 @@ void get_rwbs(struct blk_io_trace* bio_, char* tok[]){
 void get_action_code(struct blk_io_trace* bio_, char* tok[]){
     //char *act = tok[5];
     char *act = "Q";//CHANGE FOR systor
+    unsigned long act_len = strlen(act);
+
     //printf("Action code is %s\n", act);
     for(int i =0; i<strlen(act); i++) {
         if (act[i] == 'Q') {
@@ -550,11 +553,13 @@ static int handle(void){
             i++;
             token = strtok(NULL, delim);
         }
-        struct blk_io_trace processed_bit = get_bit(tokens);
-        device_ptr = &devices[0];
-        cpu_ptr = get_cpu_info(device_ptr, (processed_bit.cpu%8));
+        if (strcmp(tokens[0],"Timestamp") != 0) {
+            struct blk_io_trace processed_bit = get_bit(tokens);
+            device_ptr = &devices[0];
+            cpu_ptr = get_cpu_info(device_ptr, (processed_bit.cpu % 8));
 
-        write(cpu_ptr->fd, &processed_bit, sizeof(struct blk_io_trace));
+            write(cpu_ptr->fd, &processed_bit, sizeof(struct blk_io_trace));
+        }
 
     }
     return 0;
