@@ -529,7 +529,8 @@ struct blk_io_trace get_bit(char * tok[]){
     __u16 pdu_len = 0;
     bio_.error = error_status;
     bio_.pdu_len = pdu_len;
-    get_device_code(&bio_, 0);//CHANGE FOR unified
+    char * a = "0";
+    get_device_code(&bio_, a);//CHANGE FOR unified
     get_action_code(&bio_, tok);
     get_rwbs(&bio_, tok);
     return bio_;
