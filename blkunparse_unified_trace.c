@@ -343,7 +343,8 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 
 void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     //CHANGE FOR unified
-    __u64 sector = (atof(tok[6])/512);//%390625000;
+    __u64 sector = (atof(tok[5])/512);//%390625000;
+    //__u64 sector = (atof(tok[6])/512); //for ms_enterprise traces use this
     sector = sector%390625000;
     int bytes = atoi(tok[5]);
     bio_->sector = (__u64) sector;
