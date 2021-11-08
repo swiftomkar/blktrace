@@ -501,18 +501,19 @@ struct blk_io_trace get_bit(char * tok[]){
 
     sequence++;// = atoi(tok[2]);
 
-    char * time_parts;
+    //char * time_parts;
     char *delim = ".";
     int i=0;
     char *time_arr[2];
-    time_parts = strtok(tok[1], delim);//CHANGE FOR systor
-    while(time_parts != NULL) {
-        time_arr[i] = time_parts;
-        i++;
-        time_parts = strtok(NULL, delim);
-    }
+    //time_parts = strtok(tok[1], delim);//CHANGE FOR systor
+    //while(time_parts != NULL) {
+    //    time_arr[i] = time_parts;
+    //    i++;
+    //    time_parts = strtok(NULL, delim);
+    //}
     //__u64 time = unparse_genesis_time + ((atoi(time_arr[0])*1000000000)+atoi(time_arr[1]));
-    __u64 time = (atoi(time_arr[0])*1000000000.0)+atoi(time_arr[1]);
+    //printf("%f\n", atof(tok[1])/1000000.0);
+    __u64 time = ((atof(tok[1])/1000000.0)*1000000000.0);//+atoi(time_arr[1]);
     //printf("%s.%s\t %f\n", time_arr[0], time_arr[1], atoi(time_arr[0])*1000000000.0);
 
     //unsigned long time = atoi(tok[3]);
