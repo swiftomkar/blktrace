@@ -343,10 +343,12 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 
 void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     //CHANGE FOR unified
-    __u64 sector = (atof(tok[5])/512);//%390625000;
+    __u64 sector = atof(tok[5]);//%390625000;
     //__u64 sector = (atof(tok[6])/512); //for ms_enterprise traces use this
     sector = sector%390625000;
-    int bytes = atoi(tok[5]);
+    int bytes = atoi(tok[4])*512;
+    //printf("%d\n", bytes);
+    //printf("%d\n", (int)sector);
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
@@ -374,7 +376,7 @@ void process_fgms(struct blk_io_trace* bio_, char* tok[]){
 }
 
 void get_rwbs(struct blk_io_trace* bio_, char* tok[]){
-    char *rwbs = tok[4];//CHANGE FOR unified
+    char *rwbs = tok[3];//CHANGE FOR unified
     //printf("len = %lu\n", strlen(rwbs));
     //printf("rwbs_str = %s\n", rwbs);
     for(int i =0; i<strlen(rwbs); i++){
@@ -498,6 +500,7 @@ void get_device_code(struct blk_io_trace* bio_, char* tok){
 }
 struct blk_io_trace get_bit(char * tok[]){
     struct blk_io_trace bio_;
+    //printf("%s %s %s %s %s %s %s\n", tok[0], tok[1], tok[2],tok[3],tok[4],tok[5], tok[6]);
 
     sequence++;// = atoi(tok[2]);
 
@@ -556,6 +559,12 @@ static int handle(void){
             i++;
             token = strtok(NULL, delim);
         }
+        //for (int l=0;l<7;l++){
+        //    printf("%s,", tokens[l]);
+        //}
+        //printf("\n");
+        //printf("%s\n", tokens[3]);
+        //printf("%s, %s, %s, %s, %s, %s, %s\n", tok[0], tok[1], tok[2], tok[3], tok[4], tok[5], tok[6]);
         if (strcmp(tokens[0],"Timestamp") != 0) {
             struct blk_io_trace processed_bit = get_bit(tokens);
             device_ptr = &devices[0];
