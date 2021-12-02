@@ -26,7 +26,7 @@ Each blocktrace record contains the following fields
 #include "rbtree.h"
 #include "blktrace_api.h"
 
-static char blkunparse_version[] = "0.1";
+static char blkunparse_version[] = "1.0";
 int data_is_native = -1;
 int sequence = 0; //CHANGE FOR systor
 
@@ -118,6 +118,7 @@ static char *input_dir;
 static FILE *ip_fp;
 static char *dump_binary_dir;
 static char *ip_fstr;
+static int partition_size;
 
 FILE * btrace_fp;
 char * line = NULL;
@@ -345,7 +346,8 @@ void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     //CHANGE FOR unified
     __u64 sector = atof(tok[5]);//%390625000;
     //__u64 sector = (atof(tok[6])/512); //for ms_enterprise traces use this
-    sector = sector%390625000;
+    //sector = sector%390625000;
+    sector = sector%partition_size;
     int bytes = atoi(tok[4])*512;
     //printf("%d\n", bytes);
     //printf("%d\n", (int)sector);
@@ -354,7 +356,7 @@ void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
 }
 
 void process_a(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%390625000;
+    int sector = atoi(tok[7])%partition_size;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -362,14 +364,14 @@ void process_a(struct blk_io_trace* bio_, char* tok[]){
 
 
 void process_c(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%390625000;
+    int sector = atoi(tok[7])%partition_size;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
 
 void process_fgms(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%390625000;
+    int sector = atoi(tok[7])%partition_size;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -610,6 +612,8 @@ int main(int argc, char *argv[]){
             case 'V':
                 printf("%s version %s\n", argv[0], blkunparse_version);
                 return 0;
+            case 's':
+                partition_size = optarg;
 
             default:
                 usage(argv[0]);
