@@ -344,14 +344,14 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     //CHANGE FOR systor
     __u64 sector = (atof(tok[4])/512);//%390625000;
-    sector = sector%390625000;
+    sector = sector%2000000000;
     int bytes = atoi(tok[5]);
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
 
 void process_a(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%390625000;
+    int sector = atoi(tok[7])%2000000000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -359,14 +359,14 @@ void process_a(struct blk_io_trace* bio_, char* tok[]){
 
 
 void process_c(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%390625000;
+    int sector = atoi(tok[7])%2000000000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
 
 void process_fgms(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%390625000;
+    int sector = atoi(tok[7])%2000000000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -493,7 +493,8 @@ void get_action_code(struct blk_io_trace* bio_, char* tok[]){
 }
 
 void get_device_code(struct blk_io_trace* bio_, char* tok){
-    bio_->device = atoi(tok) << 20 | 0;
+    bio_->device = 259 << 20 | 0;
+    //bio_->device = atoi(tok) << 20 | 0;
 }
 struct blk_io_trace get_bit(char * tok[]){
     struct blk_io_trace bio_;

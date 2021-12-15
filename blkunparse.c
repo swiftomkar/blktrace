@@ -341,14 +341,14 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 }
 
 void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%390625000;
+    int sector = atoi(tok[7])%2000000000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
 
 void process_a(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%390625000;
+    int sector = atoi(tok[7])%2000000000;//390625000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -356,14 +356,14 @@ void process_a(struct blk_io_trace* bio_, char* tok[]){
 
 
 void process_c(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%390625000;
+    int sector = atoi(tok[7])%2000000000;//390625000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
 
 void process_fgms(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%390625000;
+    int sector = atoi(tok[7])%2000000000;//390625000;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -498,7 +498,8 @@ void get_device_code(struct blk_io_trace* bio_, char* tok){
         i++;
         token = strtok(NULL, delim);
     }
-    bio_->device = atoi(tokens[0]) << 20 | atoi(tokens[1]);
+    bio_->device = 259 << 20 | 0;
+    //bio_->device = atoi(tokens[0]) << 20 | atoi(tokens[1]);
 }
 struct blk_io_trace get_bit(char * tok[]){
     struct blk_io_trace bio_;
