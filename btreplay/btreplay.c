@@ -154,7 +154,7 @@ static LIST_HEAD(input_files);		// List of input files to handle
 static LIST_HEAD(map_devs);		// List of device maps
 static int nfiles = 0;			// Number of files to handle
 static int no_stalls = 0;		// Boolean: Disable pre-stalls
-static float acc_factor = 1.0;		// Int: Acceleration factor
+static float acc_factor = 1.0;		// Float: Acceleration factor
 static int find_records = 0;		// Boolean: Find record files auto
 
 /*
