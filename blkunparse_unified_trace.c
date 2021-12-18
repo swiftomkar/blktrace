@@ -344,11 +344,11 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 
 void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     //CHANGE FOR unified
-    __u64 sector = atof(tok[5]);//%390625000;
+    __u64 sector = atof(tok[6]);//%390625000;
     //__u64 sector = (atof(tok[6])/512); //for ms_enterprise traces use this
     //sector = sector%390625000;
     sector = sector%2000000000;
-    int bytes = atoi(tok[4])*512;
+    int bytes = atoi(tok[5])*512;
     //printf("%d\n", bytes);
     //printf("%d\n", (int)sector);
     bio_->sector = (__u64) sector;
@@ -378,7 +378,7 @@ void process_fgms(struct blk_io_trace* bio_, char* tok[]){
 }
 
 void get_rwbs(struct blk_io_trace* bio_, char* tok[]){
-    char *rwbs = tok[3];//CHANGE FOR unified
+    char *rwbs = tok[4];//CHANGE FOR unified
     //printf("len = %lu\n", strlen(rwbs));
     //printf("rwbs_str = %s\n", rwbs);
     for(int i =0; i<strlen(rwbs); i++){
@@ -518,7 +518,7 @@ struct blk_io_trace get_bit(char * tok[]){
     //}
     //__u64 time = unparse_genesis_time + ((atoi(time_arr[0])*1000000000)+atoi(time_arr[1]));
     //printf("%f\n", atof(tok[1])/1000000.0);
-    __u64 time = ((atof(tok[1])/1000000.0)*1000000000.0);//+atoi(time_arr[1]);
+    __u64 time = (atof(tok[1])/1000.0);//+atoi(time_arr[1]);0
     //printf("%s.%s\t %f\n", time_arr[0], time_arr[1], atoi(time_arr[0])*1000000000.0);
 
     //unsigned long time = atoi(tok[3]);
