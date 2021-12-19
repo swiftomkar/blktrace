@@ -344,11 +344,11 @@ static void handle_sigint(__attribute__((__unused__)) int sig)
 
 void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     //CHANGE FOR unified
-    __u64 sector = atof(tok[5]);//%390625000;
+    __u64 sector = atof(tok[6]);//%390625000;
     //__u64 sector = (atof(tok[6])/512); //for ms_enterprise traces use this
     //sector = sector%390625000;
     sector = sector%2000000000;
-    int bytes = atoi(tok[4])*512;
+    int bytes = atoi(tok[5])*512;
     //printf("%d\n", bytes);
     //printf("%d\n", (int)sector);
     bio_->sector = (__u64) sector;
@@ -378,7 +378,7 @@ void process_fgms(struct blk_io_trace* bio_, char* tok[]){
 }
 
 void get_rwbs(struct blk_io_trace* bio_, char* tok[]){
-    char *rwbs = tok[3];//CHANGE FOR unified
+    char *rwbs = tok[4];//CHANGE FOR unified
     //printf("len = %lu\n", strlen(rwbs));
     //printf("rwbs_str = %s\n", rwbs);
     for(int i =0; i<strlen(rwbs); i++){
@@ -523,7 +523,11 @@ struct blk_io_trace get_bit(char * tok[]){
 
     //unsigned long time = atoi(tok[3]);
     int cpu = sequence%8;//CHANGE FOR unified
-    int pid = 1234;//CHANGE FOR unified
+
+    int pid=1234;
+    if (strcmp(tok[3], "****")!=0){
+        pid = atoi(tok[3]);
+    }
 
     bio_.magic = BLK_IO_TRACE_MAGIC | BLK_IO_TRACE_VERSION;
     bio_.sequence = (__u32) sequence;
@@ -554,9 +558,11 @@ static int handle(void){
         int i=0;
         struct per_dev_info * device_ptr;
         struct per_cpu_info * cpu_ptr;
-
         token = strtok(t, delim);
         while(token != NULL) {
+            if (strcmp(token, "****")==0){
+                token="";
+            }
             tokens[i] = token;
             i++;
             token = strtok(NULL, delim);
@@ -565,8 +571,8 @@ static int handle(void){
         //    printf("%s,", tokens[l]);
         //}
         //printf("\n");
-        //printf("%s\n", tokens[3]);
-        //printf("%s, %s, %s, %s, %s, %s, %s\n", tok[0], tok[1], tok[2], tok[3], tok[4], tok[5], tok[6]);
+        //printf("%s ", tokens[0]);
+        printf("%s, %s, %s, %s, %s, %s, %s\n", tokens[0], tokens[1], tokens[2], tokens[3], tokens[4], tokens[5], tokens[6]);
         if (strcmp(tokens[0],"Timestamp") != 0) {
             struct blk_io_trace processed_bit = get_bit(tokens);
             device_ptr = &devices[0];
