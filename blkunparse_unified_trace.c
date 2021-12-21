@@ -572,7 +572,7 @@ static int handle(void){
         //}
         //printf("\n");
         //printf("%s ", tokens[0]);
-        printf("%s, %s, %s, %s, %s, %s, %s\n", tokens[0], tokens[1], tokens[2], tokens[3], tokens[4], tokens[5], tokens[6]);
+        //printf("%s, %s, %s, %s, %s, %s, %s\n", tokens[0], tokens[1], tokens[2], tokens[3], tokens[4], tokens[5], tokens[6]);
         if (strcmp(tokens[0],"Timestamp") != 0) {
             struct blk_io_trace processed_bit = get_bit(tokens);
             device_ptr = &devices[0];
