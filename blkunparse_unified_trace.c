@@ -348,7 +348,7 @@ void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     //__u64 sector = (atof(tok[6])/512); //for ms_enterprise traces use this
     //sector = sector%390625000;
     sector = sector%2000000000;
-    int bytes = atoi(tok[5])*512;
+    int bytes = atoi(tok[5]);
     //printf("%d\n", bytes);
     //printf("%d\n", (int)sector);
     bio_->sector = (__u64) sector;
