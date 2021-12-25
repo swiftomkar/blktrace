@@ -522,7 +522,7 @@ struct blk_io_trace get_bit(char * tok[]){
     //printf("%s.%s\t %f\n", time_arr[0], time_arr[1], atoi(time_arr[0])*1000000000.0);
 
     //unsigned long time = atoi(tok[3]);
-    int cpu = sequence%8;//CHANGE FOR unified
+    int cpu = sequence % (num_cpus-4);//CHANGE FOR unified
 
     int pid=1234;
     if (strcmp(tok[3], "****")!=0){
