@@ -26,7 +26,7 @@ Each blocktrace record contains the following fields
 #include "rbtree.h"
 #include "blktrace_api.h"
 
-static char blkunparse_version[] = "1.0";
+static char blkunparse_version[] = "2.0";
 int data_is_native = -1;
 int sequence = 0; //CHANGE FOR systor
 
@@ -118,7 +118,7 @@ static char *input_dir;
 static FILE *ip_fp;
 static char *dump_binary_dir;
 static char *ip_fstr;
-static int partition_size;
+static int partition_size = 2000000000; //2000000000(sectors)*512(bytes in each sector) = 1TB
 
 FILE * btrace_fp;
 char * line = NULL;
@@ -326,8 +326,9 @@ static int do_btrace_file(void){
 */
 #define S_OPTS  "a:A:b:D:d:f:F:hi:o:Oqstw:vVM"
 static char usage_str[] =    "\n\n" \
-	"-i <file>           | --input=<file>\n" \
-	"-d <dir_path>       | --binary_dump=<dir_path>\n" \
+	"-i <file>              | --input=<file>\n" \
+	"-d <dir_path>          | --binary_dump=<dir_path>\n" \
+	"-s <# of 512B sectors> | --size=<# of 512B sectors>\n"\
 	"[ -V                | --version ]\n\n" \
 	"\t-i Input file containing trace data, or '-' for stdin\n" \
 	"\t-V Print program version info\n\n";
@@ -347,7 +348,7 @@ void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     __u64 sector = atof(tok[6])/512;//%390625000;
     //__u64 sector = (atof(tok[6])/512); //for ms_enterprise traces use this
     //sector = sector%390625000;
-    sector = sector%2000000000;
+    sector = sector%partition_size;
     int bytes = atoi(tok[5]);
     //printf("%d\n", bytes);
     //printf("%d\n", (int)sector);
@@ -356,7 +357,7 @@ void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
 }
 
 void process_a(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%2000000000;
+    int sector = atoi(tok[7])%partition_size;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -364,14 +365,14 @@ void process_a(struct blk_io_trace* bio_, char* tok[]){
 
 
 void process_c(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%2000000000;
+    int sector = atoi(tok[7])%partition_size;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
 
 void process_fgms(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%2000000000;
+    int sector = atoi(tok[7])%partition_size;
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -619,7 +620,7 @@ int main(int argc, char *argv[]){
                 printf("%s version %s\n", argv[0], blkunparse_version);
                 return 0;
             case 's':
-                //partition_size = optarg;
+                partition_size = atof(optarg);
 
             default:
                 usage(argv[0]);
