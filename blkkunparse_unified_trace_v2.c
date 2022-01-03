@@ -118,7 +118,7 @@ static char *input_dir;
 static FILE *ip_fp;
 static char *dump_binary_dir;
 static char *ip_fstr;
-static int partition_size = 2000000000; //2000000000(sectors)*512(bytes in each sector) = 1TB
+static char *dev_size; //2000000000(sectors)*512(bytes in each sector) = 1TB
 
 FILE * btrace_fp;
 char * line = NULL;
@@ -348,7 +348,8 @@ void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
     __u64 sector = atof(tok[6])/512;//%390625000;
     //__u64 sector = (atof(tok[6])/512); //for ms_enterprise traces use this
     //sector = sector%390625000;
-    sector = sector%partition_size;
+    sector = sector%atoi(dev_size);
+    //sector = sector%partition_size;
     int bytes = atoi(tok[5]);
     //printf("%d\n", bytes);
     //printf("%d\n", (int)sector);
@@ -357,7 +358,7 @@ void process_bdiq(struct blk_io_trace* bio_, char* tok[]){
 }
 
 void process_a(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%partition_size;
+    int sector = atoi(tok[7])%atoi(dev_size);
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -365,14 +366,14 @@ void process_a(struct blk_io_trace* bio_, char* tok[]){
 
 
 void process_c(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%partition_size;
+    int sector = atoi(tok[7])%atoi(dev_size);
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
 }
 
 void process_fgms(struct blk_io_trace* bio_, char* tok[]){
-    int sector = atoi(tok[7])%partition_size;
+    int sector = atoi(tok[7])%atoi(dev_size);
     int bytes = atoi(tok[9])*512;
     bio_->sector = (__u64) sector;
     bio_->bytes = bytes;
@@ -615,13 +616,13 @@ int main(int argc, char *argv[]){
             case 'd':
                 dump_binary_dir = optarg;
                 break;
-
+            case 'b':
+                //printf("partition size %s", argv[3]);
+                dev_size = optarg;
+                break;
             case 'V':
                 printf("%s version %s\n", argv[0], blkunparse_version);
                 return 0;
-            case 's':
-                partition_size = atof(optarg);
-
             default:
                 usage(argv[0]);
                 return 1;
